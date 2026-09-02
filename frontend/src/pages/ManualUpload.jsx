@@ -80,7 +80,7 @@ export const ManualUpload = ({ setActiveTab }) => {
       </div>
 
       {/* Upload Box */}
-      <div className="glass-panel rounded-3xl p-8 space-y-6 shadow-2xl">
+      <div className="glass-panel rounded-3xl p-8 space-y-6 shadow-2xl border border-slate-800">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div
             onDragEnter={handleDrag}
@@ -89,10 +89,10 @@ export const ManualUpload = ({ setActiveTab }) => {
             onDrop={handleDrop}
             className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
               dragActive
-                ? 'border-emerald-500 bg-emerald-500/10'
+                ? 'border-[#f9b307] bg-[#f9b307]/10'
                 : file
-                ? 'border-emerald-500/50 bg-slate-900/80'
-                : 'border-slate-700 hover:border-slate-600 bg-slate-900/40'
+                ? 'border-[#772281] bg-[#772281]/10'
+                : 'border-slate-700 hover:border-[#772281]/50 bg-slate-900/40'
             }`}
           >
             <input
@@ -103,7 +103,7 @@ export const ManualUpload = ({ setActiveTab }) => {
               className="hidden"
             />
             <label htmlFor="edi-upload" className="cursor-pointer block space-y-3">
-              <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-[#772281]/20 border border-[#772281]/40 text-[#f9b307] flex items-center justify-center shadow-lg">
                 <UploadCloud className="w-7 h-7" />
               </div>
               <div>
@@ -114,7 +114,7 @@ export const ManualUpload = ({ setActiveTab }) => {
                   Format supporté : Fichier texte EDI positions fixes (Entête VIRM, Corps, Fin FVIR)
                 </p>
                 {file && (
-                  <p className="text-xs text-emerald-400 font-mono mt-2 font-semibold">
+                  <p className="text-xs text-[#f9b307] font-mono mt-2 font-semibold">
                     Taille : {(file.size / 1024).toFixed(2)} Ko
                   </p>
                 )}
@@ -124,14 +124,14 @@ export const ManualUpload = ({ setActiveTab }) => {
 
           <div className="flex items-center justify-between">
             <div className="text-xs text-slate-400 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span className="w-2 h-2 rounded-full bg-[#f9b307]"></span>
               Traitement automatique dans <code className="text-slate-300 font-mono">directories/input</code>
             </div>
 
             <button
               type="submit"
               disabled={!file || uploading}
-              className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-950/60 flex items-center gap-2 transition-all disabled:opacity-40"
+              className="px-6 py-2.5 rounded-xl bg-[#772281] hover:bg-[#8d2a99] text-white text-xs font-bold shadow-lg shadow-[#772281]/40 flex items-center gap-2 transition-all disabled:opacity-40"
             >
               {uploading ? (
                 <>
@@ -141,7 +141,7 @@ export const ManualUpload = ({ setActiveTab }) => {
               ) : (
                 <>
                   <span>Lancer le Traitement</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4 text-[#f9b307]" />
                 </>
               )}
             </button>

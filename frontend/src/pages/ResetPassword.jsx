@@ -5,7 +5,6 @@ import {
   CheckCircle2, 
   AlertCircle, 
   ArrowRight, 
-  ShieldCheck, 
   Eye, 
   EyeOff 
 } from 'lucide-react';
@@ -77,21 +76,25 @@ export const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-[#070a12] flex flex-col justify-center items-center p-4 relative overflow-hidden">
       {/* Background Decorative Glow */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-emerald-600/20 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-emerald-900/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute -top-40 -left-40 w-96 h-96 bg-[#772281]/25 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-[#f9b307]/15 rounded-full blur-3xl pointer-events-none"></div>
 
       <div className="w-full max-w-md space-y-6 relative z-10">
-        {/* Header Branding */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white shadow-xl shadow-emerald-950/60 mb-2">
-            <KeyRound className="w-7 h-7" />
+        {/* Header Branding with Logo */}
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center justify-center px-5 py-3 rounded-2xl bg-white shadow-xl shadow-[#772281]/25 border border-slate-700/60 mb-1">
+            <img 
+              src="/logo-bdl.png" 
+              alt="Logo BDL" 
+              className="h-10 w-auto object-contain"
+            />
           </div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight">
             Banque de Développement Local
           </h1>
-          <p className="text-xs text-emerald-400 font-semibold tracking-wide uppercase">
+          <p className="text-xs text-[#f9b307] font-bold tracking-wider uppercase">
             Initialisation du Mot de Passe RTGS
           </p>
         </div>
@@ -100,7 +103,7 @@ export const ResetPassword = () => {
         <div className="glass-panel rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-800 space-y-6">
           {tokenValidating ? (
             <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-400">
-              <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-8 h-8 border-2 border-[#f9b307] border-t-transparent rounded-full animate-spin"></div>
               <span className="text-xs">Vérification de la validité du lien...</span>
             </div>
           ) : tokenError ? (
@@ -123,8 +126,8 @@ export const ResetPassword = () => {
             </div>
           ) : isSuccess ? (
             <div className="space-y-4 text-center py-4 animate-in fade-in">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-6 h-6" />
+              <div className="w-12 h-12 rounded-2xl bg-[#772281]/20 border border-[#772281]/40 text-[#e293f0] flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-6 h-6 text-[#f9b307]" />
               </div>
               <h3 className="text-lg font-bold text-white">Mot de Passe Défini avec Succès !</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
@@ -133,10 +136,10 @@ export const ResetPassword = () => {
               <div className="pt-3">
                 <button
                   onClick={() => window.location.href = '/login'}
-                  className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-950/40 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#772281] to-[#9a38a6] hover:from-[#651c6e] hover:to-[#872d93] text-white text-xs font-bold shadow-lg shadow-[#772281]/40 transition-all flex items-center justify-center gap-2"
                 >
                   <span>Accéder à la Connexion</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4 text-[#f9b307]" />
                 </button>
               </div>
             </div>
@@ -144,12 +147,12 @@ export const ResetPassword = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* User badge */}
               {tokenInfo && (
-                <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between text-xs">
+                <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between text-xs">
                   <div>
                     <span className="text-slate-400">Compte :</span>
                     <div className="font-semibold text-slate-200">{tokenInfo.fullName || tokenInfo.username}</div>
                   </div>
-                  <div className="font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  <div className="font-mono text-[#f9b307] font-bold bg-[#f9b307]/10 px-2 py-0.5 rounded border border-[#f9b307]/30">
                     {tokenInfo.username}
                   </div>
                 </div>
@@ -170,7 +173,7 @@ export const ResetPassword = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Au moins 6 caractères"
-                    className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                    className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-[#f9b307]"
                   />
                   <button
                     type="button"
@@ -190,7 +193,7 @@ export const ResetPassword = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Ressaisissez le mot de passe"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-[#f9b307]"
                 />
               </div>
 
@@ -198,9 +201,9 @@ export const ResetPassword = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-950/40 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-[#772281] to-[#9a38a6] hover:from-[#651c6e] hover:to-[#872d93] text-white text-xs font-bold shadow-lg shadow-[#772281]/40 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  <Lock className="w-4 h-4" />
+                  <Lock className="w-4 h-4 text-[#f9b307]" />
                   <span>{submitting ? 'Enregistrement...' : 'Définir mon Mot de Passe'}</span>
                 </button>
               </div>

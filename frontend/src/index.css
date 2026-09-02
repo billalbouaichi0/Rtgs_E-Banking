@@ -1,17 +1,32 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --bdl-violet: #772281;
+    --bdl-violet-dark: #4d1554;
+    --bdl-violet-light: #9a38a6;
+    --bdl-violet-glow: rgba(119, 34, 129, 0.35);
+    
+    --bdl-yellow: #f9b307;
+    --bdl-yellow-dark: #d99600;
+    --bdl-yellow-light: #fbc642;
+    --bdl-yellow-glow: rgba(249, 179, 7, 0.35);
+  }
+
   body {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #090d16;
+    color: #f8fafc;
   }
+
   code, pre {
     font-family: 'JetBrains Mono', monospace;
   }
 }
 
-/* Custom glassmorphism and banking glow effects */
+/* Glassmorphism & Banking Glow with BDL Colors */
 .glass-panel {
-  background: rgba(15, 23, 42, 0.75);
+  background: rgba(15, 23, 42, 0.80);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -22,37 +37,52 @@
 }
 
 .glass-panel-hover:hover {
-  background: rgba(30, 41, 59, 0.85);
-  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(26, 20, 40, 0.85);
+  border-color: rgba(119, 34, 129, 0.4);
   transform: translateY(-2px);
-  box-shadow: 0 12px 30px -10px rgba(0, 104, 55, 0.2);
+  box-shadow: 0 12px 30px -10px rgba(119, 34, 129, 0.3);
 }
 
+/* BDL Branded Gradients */
 .bdl-gradient-header {
-  background: linear-gradient(135deg, #004d26 0%, #007a3d 50%, #02944b 100%);
+  background: linear-gradient(135deg, #4d1554 0%, #772281 50%, #9a38a6 100%);
 }
 
-.bdl-gold-badge {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(184, 134, 11, 0.25) 100%);
-  border: 1px solid rgba(212, 175, 55, 0.4);
-  color: #F6D06F;
+.bdl-gradient-yellow {
+  background: linear-gradient(135deg, #f9b307 0%, #f59e0b 100%);
 }
 
-/* Custom scrollbar */
+.bdl-gradient-corporate {
+  background: linear-gradient(135deg, #772281 0%, #581861 60%, #350e3b 100%);
+}
+
+.bdl-yellow-badge {
+  background: rgba(249, 179, 7, 0.12);
+  border: 1px solid rgba(249, 179, 7, 0.35);
+  color: #f9b307;
+}
+
+.bdl-violet-badge {
+  background: rgba(119, 34, 129, 0.15);
+  border: 1px solid rgba(119, 34, 129, 0.4);
+  color: #d689e4;
+}
+
+/* Custom scrollbar styled with BDL Violet */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(11, 15, 25, 0.7);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(51, 65, 85, 0.8);
+  background: rgba(77, 21, 84, 0.6);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(16, 185, 129, 0.6);
+  background: rgba(119, 34, 129, 0.9);
 }

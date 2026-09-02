@@ -140,7 +140,7 @@ export const VirementsList = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher par N° ordre, libellé, RIB, nom..."
-              className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-[#772281]"
             />
           </div>
 
@@ -149,7 +149,7 @@ export const VirementsList = () => {
             <select
               value={statut}
               onChange={(e) => { setStatut(e.target.value); setPage(1); }}
-              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-slate-200 text-xs focus:outline-none focus:border-emerald-500"
+              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-slate-200 text-xs focus:outline-none focus:border-[#772281]"
             >
               <option value="ALL">Tous les Statuts</option>
               <option value="ATTENTE_VALIDATION_SOLDE">🚨 Solde Insuffisant (Action Requise)</option>
@@ -168,7 +168,7 @@ export const VirementsList = () => {
               value={codeBanque}
               onChange={(e) => { setCodeBanque(e.target.value); setPage(1); }}
               placeholder="Code Banque (ex: 003)"
-              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-[#772281]"
             />
           </div>
 
@@ -176,7 +176,7 @@ export const VirementsList = () => {
           <div className="sm:col-span-1">
             <button
               type="submit"
-              className="w-full h-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors flex items-center justify-center"
+              className="w-full h-full py-2 rounded-xl bg-[#772281] hover:bg-[#8d2a99] text-white text-xs font-bold shadow-lg shadow-[#772281]/30 transition-colors flex items-center justify-center"
             >
               Filtrer
             </button>

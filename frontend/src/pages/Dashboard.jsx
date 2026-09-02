@@ -83,33 +83,33 @@ export const Dashboard = ({ setActiveTab }) => {
   return (
     <div className="space-y-6">
       {/* Top Banner Header */}
-      <div className="rounded-3xl bdl-gradient-header p-6 sm:p-8 text-white shadow-xl shadow-emerald-950/40 relative overflow-hidden">
+      <div className="rounded-3xl bdl-gradient-corporate p-6 sm:p-8 text-white shadow-xl shadow-[#772281]/20 relative overflow-hidden border border-[#772281]/40">
         <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-white/5 skew-x-12 transform origin-top-right pointer-events-none"></div>
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold text-emerald-100 border border-white/20">
-              <ShieldCheck className="w-4 h-4 text-emerald-300" />
-              <span>Supervision Centrale RTGS • BDL Alger</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold text-[#f9b307] border border-[#f9b307]/30">
+              <ShieldCheck className="w-4 h-4 text-[#f9b307]" />
+              <span>Supervision Centrale RTGS • Banque du Développement Local (BDL)</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               Tableau de Bord des Flux Interbancaires
             </h1>
-            <p className="text-xs sm:text-sm text-emerald-100/80 max-w-2xl leading-relaxed">
-              Traitement temps réel des remises EDI, contrôle du solde SAB (Oracle 11g) et génération automatisée des messages SWIFT MT103, OD et SI Retour.
+            <p className="text-xs sm:text-sm text-purple-100/90 max-w-2xl leading-relaxed">
+              Traitement temps réel des remises EDI, contrôle du solde SAB (Oracle 11g), détection anti-doublons et génération automatisée des messages SWIFT MT103, OD et SI Retour.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               onClick={() => setActiveTab('simulateur')}
-              className="px-4 py-2.5 rounded-xl bg-white text-emerald-900 hover:bg-emerald-50 text-xs font-bold shadow-lg transition-all flex items-center gap-2"
+              className="px-4 py-2.5 rounded-xl bg-[#f9b307] text-[#772281] hover:bg-[#e0a006] text-xs font-bold shadow-lg shadow-[#f9b307]/20 transition-all flex items-center gap-2"
             >
-              <Zap className="w-4 h-4 text-emerald-700" />
+              <Zap className="w-4 h-4 text-[#772281]" />
               <span>Simuler un Flux</span>
             </button>
             <button
               onClick={() => { setLoading(true); fetchDashboardStats(); }}
-              className="p-2.5 rounded-xl bg-emerald-900/60 hover:bg-emerald-900 text-white border border-emerald-400/30 transition-all"
+              className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all"
               title="Rafraîchir les métriques"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />

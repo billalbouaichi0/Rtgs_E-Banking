@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Building2, Shield, Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
+import { Shield, Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
 
 export const Login = () => {
   const { login } = useAuth();
@@ -33,36 +33,40 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-[#070a12] p-4 relative overflow-hidden">
       {/* Background ambient decorative glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-600/15 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute bottom-10 right-10 w-80 h-80 bg-teal-600/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[32rem] h-[32rem] bg-[#772281]/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute bottom-10 right-10 w-80 h-80 bg-[#f9b307]/10 rounded-full blur-3xl pointer-events-none"></div>
 
       <div className="w-full max-w-md relative z-10 space-y-6">
-        {/* Brand Card */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-800 border border-emerald-500/40 shadow-xl shadow-emerald-950/60 mb-2">
-            <Building2 className="w-8 h-8 text-white" />
+        {/* Brand Card with Official BDL Logo */}
+        <div className="text-center space-y-3">
+          <div className="inline-flex items-center justify-center px-5 py-3 rounded-2xl bg-white shadow-xl shadow-[#772281]/25 border border-slate-700/60 mb-1">
+            <img 
+              src="/logo-bdl.png" 
+              alt="Logo BDL" 
+              className="h-10 w-auto object-contain"
+            />
           </div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight">
             Banque de Développement Local
           </h1>
-          <p className="text-sm font-medium text-emerald-400">
+          <p className="text-xs font-bold text-[#f9b307] tracking-wider uppercase">
             Plateforme RTGS e-Banking • Traitement EDI & MT103
           </p>
         </div>
 
         {/* Login Form Box */}
-        <div className="glass-panel rounded-3xl p-8 shadow-2xl border border-slate-800/80 space-y-6">
+        <div className="glass-panel rounded-3xl p-8 shadow-2xl border border-slate-800 space-y-6">
           <div className="space-y-1">
-            <h2 className="text-lg font-bold text-slate-100">Authentification Sécurisée</h2>
+            <h2 className="text-base font-bold text-slate-100">Authentification Sécurisée</h2>
             <p className="text-xs text-slate-400">
-              Veuillez vous identifier pour accéder au terminal de télécompensation.
+              Veuillez vous identifier pour accéder au terminal RTGS.
             </p>
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs animate-shake">
+            <div className="flex items-center gap-2 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
               <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-400" />
               <span>{error}</span>
             </div>
@@ -79,7 +83,7 @@ export const Login = () => {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="admin ou consultant"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-white text-xs font-medium focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-xs font-medium focus:outline-none focus:border-[#f9b307] focus:ring-1 focus:ring-[#f9b307] transition-all"
                 />
               </div>
             </div>
@@ -94,7 +98,7 @@ export const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-white text-xs font-medium focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-xs font-medium focus:outline-none focus:border-[#f9b307] focus:ring-1 focus:ring-[#f9b307] transition-all"
                 />
               </div>
             </div>
@@ -102,14 +106,14 @@ export const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white text-xs font-bold shadow-lg shadow-emerald-950/60 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-[#772281] to-[#9a38a6] hover:from-[#651c6e] hover:to-[#872d93] text-white text-xs font-bold shadow-lg shadow-[#772281]/40 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
             >
               {loading ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               ) : (
                 <>
                   <span>Ouvrir la Session</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4 text-[#f9b307]" />
                 </>
               )}
             </button>
@@ -118,21 +122,21 @@ export const Login = () => {
           {/* Quick Demo Fill Buttons */}
           <div className="pt-4 border-t border-slate-800 space-y-2.5">
             <p className="text-[11px] text-center text-slate-500 font-medium">
-              Comptes de Démonstration Pré-configurés :
+              Comptes de Démonstration :
             </p>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => fillQuickUser('admin')}
-                className="py-2 px-3 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-emerald-400 flex items-center justify-center gap-1.5 transition-colors"
+                className="py-2 px-3 rounded-xl bg-slate-900 hover:bg-[#772281]/20 border border-slate-700 hover:border-[#772281]/50 text-[11px] font-semibold text-[#f9b307] flex items-center justify-center gap-1.5 transition-colors"
               >
                 <Shield className="w-3.5 h-3.5" />
-                <span>Admin (Complet)</span>
+                <span>Admin</span>
               </button>
               <button
                 type="button"
                 onClick={() => fillQuickUser('consultant')}
-                className="py-2 px-3 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700 text-[11px] font-semibold text-sky-400 flex items-center justify-center gap-1.5 transition-colors"
+                className="py-2 px-3 rounded-xl bg-slate-900 hover:bg-[#772281]/20 border border-slate-700 hover:border-[#772281]/50 text-[11px] font-semibold text-slate-300 flex items-center justify-center gap-1.5 transition-colors"
               >
                 <User className="w-3.5 h-3.5" />
                 <span>Consultation</span>
@@ -143,7 +147,7 @@ export const Login = () => {
 
         {/* Footer info */}
         <p className="text-center text-[11px] text-slate-500">
-          Système certifié Banque d'Algérie RTGS • BDL Alger © 2026
+          Banque de Développement Local • DSI RTGS © 2026
         </p>
       </div>
     </div>

@@ -31,7 +31,7 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
   }
 
   return (
-    <aside className="w-64 flex-shrink-0 border-r border-slate-800 bg-slate-950/50 p-4 flex flex-col justify-between hidden md:flex min-h-[calc(100vh-4rem)]">
+    <aside className="w-64 flex-shrink-0 border-r border-slate-800/80 bg-[#070a12]/60 p-4 flex flex-col justify-between hidden md:flex min-h-[calc(100vh-4rem)]">
       <div className="space-y-6">
         {/* Navigation list */}
         <div className="space-y-1">
@@ -47,25 +47,25 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
                 onClick={() => setActiveTab(item.id)}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
                   isActive
-                    ? 'bg-gradient-to-r from-emerald-600/20 to-emerald-500/10 text-emerald-300 border border-emerald-500/30 shadow-sm'
+                    ? 'bg-gradient-to-r from-[#772281]/30 to-[#f9b307]/15 text-white border border-[#772281]/50 shadow-md shadow-[#772281]/15'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-emerald-400' : 'text-slate-400'}`} />
-                <span>{item.name}</span>
+                <Icon className={`w-4 h-4 ${isActive ? 'text-[#f9b307]' : 'text-slate-400'}`} />
+                <span className={isActive ? 'font-bold' : ''}>{item.name}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Info Box - Règles Métier */}
-        <div className="rounded-xl bg-slate-900/70 border border-slate-800/80 p-3.5 space-y-2">
+        {/* Info Box - Règles Métier BDL */}
+        <div className="rounded-2xl bg-gradient-to-br from-[#171026] to-[#0d1322] border border-[#772281]/30 p-3.5 space-y-2 shadow-sm">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
-            <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
+            <div className="w-2.5 h-2.5 rounded-full bg-[#f9b307] shadow-sm shadow-[#f9b307]/50"></div>
             Règles RTGS BDL
           </div>
           <ul className="text-[11px] text-slate-400 space-y-1.5 leading-relaxed">
-            <li>• Seuil : <span className="text-slate-200 font-medium">≥ 1 000 000 DZD</span></li>
+            <li>• Seuil : <span className="text-[#f9b307] font-semibold">≥ 1 000 000 DZD</span></li>
             <li>• Éligibilité : <span className="text-slate-200 font-medium">Interbancaire</span></li>
             <li>• Core Banking : <span className="text-slate-200 font-medium">Oracle 11g SAB</span></li>
             <li>• Sorties : <span className="text-emerald-400 font-medium">OD + MT103</span> ou <span className="text-rose-400 font-medium">SI_RET</span></li>
@@ -78,7 +78,7 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
         <div className="flex items-center gap-2 text-xs text-slate-400">
           {isAdmin ? (
             <>
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <ShieldCheck className="w-4 h-4 text-[#f9b307]" />
               <span>Mode : <strong className="text-slate-200">Administrateur</strong></span>
             </>
           ) : (

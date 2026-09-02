@@ -20,6 +20,7 @@
     "mysql2": "^3.10.1",
     "nodemailer": "^9.1.1",
     "oracledb": "^7.0.1",
+    "pptxgenjs": "^4.0.1",
     "sequelize": "^6.37.3",
     "sqlite3": "^5.1.7"
   }

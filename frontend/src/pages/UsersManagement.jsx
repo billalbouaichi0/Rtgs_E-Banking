@@ -152,9 +152,9 @@ export const UsersManagement = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold mb-1">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Administration Centrale & Sécurité</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#772281]/20 text-[#f9b307] border border-[#772281]/40 text-xs font-semibold mb-1">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#f9b307]" />
+            <span>Administration Centrale & Sécurité BDL</span>
           </div>
           <h2 className="text-xl font-extrabold text-white tracking-tight">
             Gestion des Utilisateurs & Droits d'Accès
@@ -172,9 +172,9 @@ export const UsersManagement = () => {
               setCreatedResult(null);
               setIsModalOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-950/40 transition-all"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#772281] hover:bg-[#8d2a99] text-white text-xs font-bold shadow-lg shadow-[#772281]/40 transition-all"
           >
-            <UserPlus className="w-4 h-4" />
+            <UserPlus className="w-4 h-4 text-[#f9b307]" />
             <span>Ajouter un Utilisateur</span>
           </button>
           <button
@@ -191,7 +191,7 @@ export const UsersManagement = () => {
       {notification && (
         <div className={`p-4 rounded-2xl border text-xs font-semibold flex items-center justify-between ${
           notification.type === 'success'
-            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+            ? 'bg-[#772281]/20 border-[#772281]/50 text-purple-200'
             : 'bg-rose-500/15 border-rose-500/30 text-rose-300'
         }`}>
           <span>{notification.text}</span>
@@ -210,7 +210,7 @@ export const UsersManagement = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher par nom, identifiant, email..."
-            className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-[#772281]"
           />
         </div>
 
@@ -218,7 +218,7 @@ export const UsersManagement = () => {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-slate-200 text-xs focus:outline-none focus:border-emerald-500"
+            className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-slate-200 text-xs focus:outline-none focus:border-[#772281]"
           >
             <option value="ALL">Tous les Rôles</option>
             <option value="administrateur">Administrateur</option>
@@ -377,9 +377,9 @@ export const UsersManagement = () => {
 
               {createdResult ? (
                 <div className="space-y-4 text-xs">
-                  <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 space-y-2">
-                    <div className="font-bold text-sm text-emerald-300 flex items-center gap-1.5">
-                      <Check className="w-4 h-4" /> Utilisateur créé avec succès !
+                  <div className="p-4 rounded-xl bg-[#772281]/20 border border-[#772281]/40 text-purple-200 space-y-2">
+                    <div className="font-bold text-sm text-[#f9b307] flex items-center gap-1.5">
+                      <Check className="w-4 h-4 text-[#f9b307]" /> Utilisateur créé avec succès !
                     </div>
                     <p>
                       {createdResult.emailSent
@@ -387,7 +387,7 @@ export const UsersManagement = () => {
                         : `Le compte est actif. Vous pouvez transmettre le lien ci-dessous à l'utilisateur :`}
                     </p>
                     {createdResult.user.resetUrl && (
-                      <div className="mt-2 p-2.5 bg-slate-950 rounded-lg border border-slate-800 font-mono text-[11px] text-emerald-400 break-all select-all">
+                      <div className="mt-2 p-2.5 bg-slate-950 rounded-lg border border-slate-800 font-mono text-[11px] text-[#f9b307] break-all select-all">
                         {createdResult.user.resetUrl}
                       </div>
                     )}
@@ -396,7 +396,7 @@ export const UsersManagement = () => {
                     <button
                       type="button"
                       onClick={() => setIsModalOpen(false)}
-                      className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all"
+                      className="px-5 py-2 rounded-xl bg-[#772281] hover:bg-[#8d2a99] text-white font-bold transition-all shadow-lg shadow-[#772281]/30"
                     >
                       Terminer
                     </button>
@@ -412,7 +412,7 @@ export const UsersManagement = () => {
                       placeholder="Ex: Karim Benali"
                       value={formData.fullName}
                       onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-[#772281]"
                     />
                   </div>
 
@@ -424,7 +424,7 @@ export const UsersManagement = () => {
                       placeholder="Ex: k.benali"
                       value={formData.username}
                       onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/\s+/g, '') })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs font-mono placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs font-mono placeholder-slate-500 focus:outline-none focus:border-[#772281]"
                     />
                   </div>
 
@@ -436,7 +436,7 @@ export const UsersManagement = () => {
                       placeholder="Ex: k.benali@bdl.dz"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-[#772281]"
                     />
                   </div>
 
@@ -445,7 +445,7 @@ export const UsersManagement = () => {
                     <select
                       value={formData.role}
                       onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-xs focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-xs focus:outline-none focus:border-[#772281]"
                     >
                       <option value="consultation">Consultation (Visualisation et export des flux)</option>
                       <option value="administrateur">Administrateur (Gestion complète et validation des alertes)</option>
@@ -454,11 +454,11 @@ export const UsersManagement = () => {
 
                   <div className="rounded-xl bg-slate-950 p-3.5 border border-slate-800/80 text-xs text-slate-400 space-y-1">
                     <div className="flex items-center gap-1.5 font-bold text-slate-300">
-                      <Mail className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Notification automatique SMTP</span>
+                      <Mail className="w-3.5 h-3.5 text-[#f9b307]" />
+                      <span>Notification automatique SMTP BDL</span>
                     </div>
                     <p className="text-[11px] leading-relaxed">
-                      Dès validation, un email contenant un lien sécurisé permettant à l'utilisateur de définir son mot de passe sera immédiatement acheminé via le serveur SMTP interne BDL (<code className="text-emerald-400">10.121.2.50:587</code>).
+                      Dès validation, un email contenant un lien sécurisé permettant à l'utilisateur de définir son mot de passe sera immédiatement acheminé via le serveur SMTP interne BDL (<code className="text-[#f9b307]">10.121.2.50:587</code>).
                     </p>
                   </div>
 
@@ -472,9 +472,9 @@ export const UsersManagement = () => {
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg transition-all flex items-center gap-2"
+                      className="px-5 py-2 rounded-xl text-xs font-bold bg-[#772281] hover:bg-[#8d2a99] text-white shadow-lg shadow-[#772281]/40 transition-all flex items-center gap-2"
                     >
-                      <Check className="w-4 h-4" />
+                      <Check className="w-4 h-4 text-[#f9b307]" />
                       <span>Créer & Envoyer Email</span>
                     </button>
                   </div>
