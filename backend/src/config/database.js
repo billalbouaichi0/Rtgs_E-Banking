@@ -1,6 +1,7 @@
 const { Sequelize } = require('sequelize');
 const mysql = require('mysql2/promise');
 const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 require('dotenv').config();
 
 const useSqlite = process.env.USE_SQLITE_FALLBACK === 'true';

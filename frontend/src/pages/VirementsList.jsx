@@ -9,7 +9,9 @@ import {
   RefreshCw,
   SlidersHorizontal,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Check,
+  X
 } from 'lucide-react';
 import api from '../services/api';
 import StatusBadge from '../components/StatusBadge';
@@ -28,6 +30,8 @@ export const VirementsList = () => {
 
   const [selectedVirementId, setSelectedVirementId] = useState(null);
   const [quickViewer, setQuickViewer] = useState(null);
+  const [actionLoading, setActionLoading] = useState({});
+  const [notification, setNotification] = useState(null);
 
   const fetchVirements = async () => {
     setLoading(true);
@@ -61,6 +65,34 @@ export const VirementsList = () => {
     fetchVirements();
   };
 
+  const handleValiderVirement = async (virementId) => {
+    setActionLoading((prev) => ({ ...prev, [virementId]: 'validating' }));
+    try {
+      const res = await api.post(`/virements/${virementId}/valider`);
+      setNotification({ type: 'success', text: res.data.message || 'Virement validé avec succès (OD et MT103 générés).' });
+      await fetchVirements();
+    } catch (err) {
+      setNotification({ type: 'error', text: err.response?.data?.message || err.message });
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [virementId]: null }));
+    }
+  };
+
+  const handleRefuserVirement = async (virementId) => {
+    setActionLoading((prev) => ({ ...prev, [virementId]: 'refusing' }));
+    try {
+      const res = await api.post(`/virements/${virementId}/refuser`, {
+        motif: 'Refusé manuellement pour solde insuffisant dans SAB'
+      });
+      setNotification({ type: 'success', text: res.data.message || 'Virement refusé (Fichier SI Retour généré).' });
+      await fetchVirements();
+    } catch (err) {
+      setNotification({ type: 'error', text: err.response?.data?.message || err.message });
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [virementId]: null }));
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -70,7 +102,7 @@ export const VirementsList = () => {
             Registre des Virements & Remises EDI
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Consultation, recherche multi-critères et extraction des flux RTGS ({totalCount} opérations)
+            Consultation, recherche multi-critères et validation manuelle des flux RTGS ({totalCount} opérations)
           </p>
         </div>
 
@@ -83,11 +115,25 @@ export const VirementsList = () => {
         </button>
       </div>
 
+      {/* Notification */}
+      {notification && (
+        <div className={`p-4 rounded-2xl border text-xs font-semibold flex items-center justify-between ${
+          notification.type === 'success'
+            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+            : 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+        }`}>
+          <span>{notification.text}</span>
+          <button onClick={() => setNotification(null)} className="p-1 hover:opacity-75">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Filter & Search Bar */}
       <div className="glass-panel rounded-2xl p-4 space-y-3">
         <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-12 gap-3">
           {/* Search Input */}
-          <div className="sm:col-span-6 relative">
+          <div className="sm:col-span-5 relative">
             <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
@@ -99,15 +145,16 @@ export const VirementsList = () => {
           </div>
 
           {/* Statut Selector */}
-          <div className="sm:col-span-3">
+          <div className="sm:col-span-4">
             <select
               value={statut}
               onChange={(e) => { setStatut(e.target.value); setPage(1); }}
               className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-slate-200 text-xs focus:outline-none focus:border-emerald-500"
             >
               <option value="ALL">Tous les Statuts</option>
+              <option value="ATTENTE_VALIDATION_SOLDE">🚨 Solde Insuffisant (Action Requise)</option>
               <option value="VALIDE_TRAITE">Traités & Validés (OD + MT103)</option>
-              <option value="REJETE_SOLDE">Rejetés (Solde Insuffisant)</option>
+              <option value="REJETE_SOLDE">Refusés / Rejetés (SI Retour)</option>
               <option value="IGNORE_FILTRE">Ignorés (Filtre RTGS)</option>
               <option value="EN_ATTENTE">En Attente</option>
             </select>
@@ -191,6 +238,26 @@ export const VirementsList = () => {
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        {v.statut === 'ATTENTE_VALIDATION_SOLDE' && (
+                          <div className="flex items-center gap-1 mr-1">
+                            <button
+                              disabled={!!actionLoading[v.id]}
+                              onClick={() => handleRefuserVirement(v.id)}
+                              className="px-2 py-1 rounded bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-[10px] font-bold"
+                              title="Refuser (Générer SI Retour)"
+                            >
+                              Refuser
+                            </button>
+                            <button
+                              disabled={!!actionLoading[v.id]}
+                              onClick={() => handleValiderVirement(v.id)}
+                              className="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold shadow"
+                              title="Valider (Générer OD + MT103)"
+                            >
+                              Valider
+                            </button>
+                          </div>
+                        )}
                         {v.fichierMt103Genere && (
                           <button
                             onClick={() => setQuickViewer({ id: v.id, type: 'mt103', title: `SWIFT MT103 - ${v.numeroOrdre}` })}
@@ -270,7 +337,7 @@ export const VirementsList = () => {
       {selectedVirementId && (
         <VirementDetailModal
           isOpen={true}
-          onClose={() => setSelectedVirementId(null)}
+          onClose={() => { setSelectedVirementId(null); fetchVirements(); }}
           virementId={selectedVirementId}
         />
       )}

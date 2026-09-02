@@ -15,11 +15,50 @@ const storage = multer.diskStorage({
     cb(null, FOLDERS.input);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, file.originalname);
   }
 });
 const upload = multer({ storage });
+
+// Liste des virements en attente de décision solde (Alertes Solde)
+router.get('/en-attente-solde', verifyToken, async (req, res) => {
+  try {
+    const virements = await Virement.findAll({
+      where: { statut: 'ATTENTE_VALIDATION_SOLDE' },
+      include: [
+        { model: Remise, as: 'remise', attributes: ['nomFichier', 'dateRemiseOrdre', 'referenceRemise'] }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(virements);
+  } catch (err) {
+    console.error('Erreur liste virements en attente solde:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Valider manuellement un virement à solde insuffisant (Forçage -> OD + MT103)
+router.post('/:id/valider', verifyToken, async (req, res) => {
+  try {
+    const result = await processingService.validerVirementManuellement(req.params.id, req.user);
+    res.json(result);
+  } catch (err) {
+    console.error('Erreur validation manuelle virement:', err);
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// Refuser manuellement un virement à solde insuffisant (Rejet -> SI Retour)
+router.post('/:id/refuser', verifyToken, async (req, res) => {
+  try {
+    const { motif } = req.body;
+    const result = await processingService.refuserVirementManuellement(req.params.id, req.user, motif);
+    res.json(result);
+  } catch (err) {
+    console.error('Erreur refus manuel virement:', err);
+    res.status(400).json({ message: err.message });
+  }
+});
 
 // Liste filtrable des virements
 router.get('/', verifyToken, async (req, res) => {

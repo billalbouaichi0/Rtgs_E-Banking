@@ -9,16 +9,18 @@ router.get('/dashboard', verifyToken, async (req, res) => {
   try {
     const totalVirements = await Virement.count();
     const validesCount = await Virement.count({ where: { statut: 'VALIDE_TRAITE' } });
+    const attenteSoldeCount = await Virement.count({ where: { statut: 'ATTENTE_VALIDATION_SOLDE' } });
     const rejetesCount = await Virement.count({ where: { statut: 'REJETE_SOLDE' } });
     const ignoresCount = await Virement.count({ where: { statut: 'IGNORE_FILTRE' } });
 
     // Montants totaux
     const totalMontantValide = (await Virement.sum('montant', { where: { statut: 'VALIDE_TRAITE' } })) || 0;
+    const totalMontantAttente = (await Virement.sum('montant', { where: { statut: 'ATTENTE_VALIDATION_SOLDE' } })) || 0;
     const totalMontantRejete = (await Virement.sum('montant', { where: { statut: 'REJETE_SOLDE' } })) || 0;
     const totalMontantIgnore = (await Virement.sum('montant', { where: { statut: 'IGNORE_FILTRE' } })) || 0;
     const totalMontantGlobal = (await Virement.sum('montant')) || 0;
 
-    // Répartition par Banque Bénéficiaire (Top 5)
+    // Répartition par Banque Bénéficiaire (Top 6)
     const banqueDistribution = await Virement.findAll({
       attributes: [
         'codeBanqueBeneficiaire',
@@ -28,6 +30,14 @@ router.get('/dashboard', verifyToken, async (req, res) => {
       group: ['codeBanqueBeneficiaire'],
       order: [[fn('SUM', col('montant')), 'DESC']],
       limit: 6
+    });
+
+    // Virements en attente de validation solde
+    const alertesSolde = await Virement.findAll({
+      where: { statut: 'ATTENTE_VALIDATION_SOLDE' },
+      limit: 10,
+      order: [['createdAt', 'DESC']],
+      include: [{ model: Remise, as: 'remise', attributes: ['nomFichier'] }]
     });
 
     // Derniers virements traités
@@ -47,14 +57,17 @@ router.get('/dashboard', verifyToken, async (req, res) => {
       kpis: {
         totalVirements,
         validesCount,
+        attenteSoldeCount,
         rejetesCount,
         ignoresCount,
         totalMontantValide: Number(totalMontantValide),
+        totalMontantAttente: Number(totalMontantAttente),
         totalMontantRejete: Number(totalMontantRejete),
         totalMontantIgnore: Number(totalMontantIgnore),
         totalMontantGlobal: Number(totalMontantGlobal),
         tauxValidation: totalVirements > 0 ? ((validesCount / totalVirements) * 100).toFixed(1) : 0
       },
+      alertesSolde,
       banqueDistribution,
       recentsVirements,
       recentLogs

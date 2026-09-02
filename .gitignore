@@ -27,3 +27,9 @@ yarn-error.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Dynamic Generated Files in directories (keep .gitkeep)
+directories/**/*.txt
+directories/**/*.edi
+!directories/**/.gitkeep
+

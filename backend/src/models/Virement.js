@@ -81,12 +81,25 @@ const Virement = sequelize.define('Virement', {
       'REJETE_SOLDE',
       'IGNORE_FILTRE',
       'EN_ATTENTE',
+      'ATTENTE_VALIDATION_SOLDE',
       'ERREUR'
     ),
     defaultValue: 'EN_ATTENTE'
   },
   motifRejetOuIgnorer: {
     type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  decisionPar: {
+    type: DataTypes.STRING(50),
+    allowNull: true
+  },
+  decisionDate: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  decisionType: {
+    type: DataTypes.STRING(30),
     allowNull: true
   },
   // Solde vérifié via Oracle 11g

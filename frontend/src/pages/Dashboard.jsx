@@ -13,7 +13,10 @@ import {
   Zap,
   Building,
   Eye,
-  Layers
+  Layers,
+  AlertOctagon,
+  Check,
+  X
 } from 'lucide-react';
 import api from '../services/api';
 import StatusBadge from '../components/StatusBadge';
@@ -25,6 +28,8 @@ export const Dashboard = ({ setActiveTab }) => {
   const [loading, setLoading] = useState(true);
   const [selectedVirementId, setSelectedVirementId] = useState(null);
   const [quickViewer, setQuickViewer] = useState(null); // { id, type, title }
+  const [actionLoading, setActionLoading] = useState({});
+  const [actionMessage, setActionMessage] = useState(null);
 
   const fetchDashboardStats = async () => {
     try {
@@ -42,6 +47,36 @@ export const Dashboard = ({ setActiveTab }) => {
     const interval = setInterval(fetchDashboardStats, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleValiderVirement = async (virementId) => {
+    setActionLoading((prev) => ({ ...prev, [virementId]: 'validating' }));
+    setActionMessage(null);
+    try {
+      const res = await api.post(`/virements/${virementId}/valider`);
+      setActionMessage({ type: 'success', text: res.data.message || 'Virement validé avec succès (OD + MT103 générés).' });
+      await fetchDashboardStats();
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err.response?.data?.message || err.message });
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [virementId]: null }));
+    }
+  };
+
+  const handleRefuserVirement = async (virementId) => {
+    setActionLoading((prev) => ({ ...prev, [virementId]: 'refusing' }));
+    setActionMessage(null);
+    try {
+      const res = await api.post(`/virements/${virementId}/refuser`, {
+        motif: 'Refus manuel pour solde insuffisant dans SAB (DZD)'
+      });
+      setActionMessage({ type: 'success', text: res.data.message || 'Virement refusé (Fichier SI Retour généré).' });
+      await fetchDashboardStats();
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err.response?.data?.message || err.message });
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [virementId]: null }));
+    }
+  };
 
   const k = stats?.kpis || {};
 
@@ -83,6 +118,20 @@ export const Dashboard = ({ setActiveTab }) => {
         </div>
       </div>
 
+      {/* Action Notification Alert */}
+      {actionMessage && (
+        <div className={`p-4 rounded-2xl border text-xs font-semibold flex items-center justify-between ${
+          actionMessage.type === 'success' 
+            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' 
+            : 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+        }`}>
+          <span>{actionMessage.text}</span>
+          <button onClick={() => setActionMessage(null)} className="p-1 hover:opacity-75">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Validé & Traité (OD + MT103) */}
@@ -105,11 +154,31 @@ export const Dashboard = ({ setActiveTab }) => {
           </div>
         </div>
 
+        {/* En Attente de Décision Solde (NOUVEAU) */}
+        <div className="glass-panel glass-panel-hover rounded-2xl p-5 space-y-3 border-amber-500/30 bg-amber-500/5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+              Alertes Solde Insuffisant
+            </span>
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse">
+              <AlertOctagon className="w-5 h-5" />
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl font-extrabold text-amber-300">
+              {Number(k.totalMontantAttente || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} <span className="text-xs font-bold text-amber-400">DZD</span>
+            </div>
+            <p className="text-xs text-amber-200/80 mt-1">
+              <strong className="text-amber-100">{k.attenteSoldeCount || 0}</strong> virement(s) en attente de décision
+            </p>
+          </div>
+        </div>
+
         {/* Rejetés Solde Insuffisant */}
         <div className="glass-panel glass-panel-hover rounded-2xl p-5 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-rose-400">
-              Rejets Solde (SI Retour)
+              Refusés (SI Retour)
             </span>
             <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
               <XCircle className="w-5 h-5" />
@@ -120,7 +189,7 @@ export const Dashboard = ({ setActiveTab }) => {
               {Number(k.totalMontantRejete || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} <span className="text-xs font-bold text-rose-400">DZD</span>
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              <strong className="text-slate-200">{k.rejetesCount || 0}</strong> virement(s) en solde insuffisant SAB
+              <strong className="text-slate-200">{k.rejetesCount || 0}</strong> virement(s) avec fichier SI_RET
             </p>
           </div>
         </div>
@@ -128,43 +197,102 @@ export const Dashboard = ({ setActiveTab }) => {
         {/* Ignorés (Filtre RTGS) */}
         <div className="glass-panel glass-panel-hover rounded-2xl p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
-              Ignorés (Hors Seuil / Intrabancaire)
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Ignorés (Filtre RTGS)
             </span>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <div className="p-2 rounded-xl bg-slate-500/10 text-slate-400 border border-slate-500/20">
               <AlertTriangle className="w-5 h-5" />
             </div>
           </div>
           <div>
             <div className="text-2xl font-extrabold text-white">
-              {Number(k.totalMontantIgnore || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} <span className="text-xs font-bold text-amber-400">DZD</span>
+              {Number(k.totalMontantIgnore || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} <span className="text-xs font-bold text-slate-400">DZD</span>
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              <strong className="text-slate-200">{k.ignoresCount || 0}</strong> opération(s) déplacée(s) vers <code className="text-slate-300 text-[10px]">input/ignorer</code>
-            </p>
-          </div>
-        </div>
-
-        {/* Volume Global & Taux de Validation */}
-        <div className="glass-panel glass-panel-hover rounded-2xl p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-sky-400">
-              Taux de Succès Global
-            </span>
-            <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-          </div>
-          <div>
-            <div className="text-2xl font-extrabold text-white">
-              {k.tauxValidation || 0}%
-            </div>
-            <p className="text-xs text-slate-400 mt-1">
-              Total analysé : <strong className="text-slate-200">{k.totalVirements || 0}</strong> opérations
+              <strong className="text-slate-200">{k.ignoresCount || 0}</strong> opération(s) dans <code className="text-slate-300 text-[10px]">input/ignorer</code>
             </p>
           </div>
         </div>
       </div>
+
+      {/* SECTION ALERTES SOLDE : Décision Requise (Validation / Refus) */}
+      {stats?.alertesSolde && stats.alertesSolde.length > 0 && (
+        <div className="rounded-2xl bg-amber-950/30 border border-amber-500/40 p-5 space-y-4 shadow-xl">
+          <div className="flex items-center justify-between pb-3 border-b border-amber-500/20">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <AlertOctagon className="w-4 h-4 animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-sm font-extrabold text-amber-300">
+                  Virements en attente de décision Solde ({stats.alertesSolde.length})
+                </h3>
+                <p className="text-xs text-amber-200/70">
+                  Le solde du compte donneur d'ordre est insuffisant. Vous pouvez forcer la validation (OD + MT103) ou refuser (Génération SI Retour).
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {stats.alertesSolde.map((v) => (
+              <div key={v.id} className="p-4 rounded-xl bg-slate-900/90 border border-amber-500/30 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="font-mono text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                      N° {v.numeroOrdre}
+                    </span>
+                    <h4 className="text-xs font-bold text-white mt-1">{v.libelle}</h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Donneur : <strong className="text-slate-200">{v.nomDonneur}</strong> ({v.compteDonneur15})
+                    </p>
+                    <p className="text-[11px] text-slate-400">
+                      Bénéficiaire : <strong className="text-slate-200">{v.nomBeneficiaire}</strong> (Banque {v.codeBanqueBeneficiaire})
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-extrabold text-white">
+                      {Number(v.montant).toLocaleString('fr-FR')} DZD
+                    </div>
+                    <div className="text-[10px] text-rose-400 mt-0.5">
+                      Solde SAB : {v.soldeCompteTrouve !== null ? `${Number(v.soldeCompteTrouve).toLocaleString('fr-FR')} DZD` : '0 DZD'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-3">
+                  <button
+                    onClick={() => setSelectedVirementId(v.id)}
+                    className="text-xs text-slate-400 hover:text-white flex items-center gap-1"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Détails</span>
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      disabled={!!actionLoading[v.id]}
+                      onClick={() => handleRefuserVirement(v.id)}
+                      className="px-3 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-bold transition-all flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>{actionLoading[v.id] === 'refusing' ? 'Refus...' : 'Refuser (SI_RET)'}</span>
+                    </button>
+                    <button
+                      disabled={!!actionLoading[v.id]}
+                      onClick={() => handleValiderVirement(v.id)}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-lg flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>{actionLoading[v.id] === 'validating' ? 'Validation...' : 'Valider (OD+MT)'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Grid: Banques Répartition & Recent Stream */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -268,6 +396,24 @@ export const Dashboard = ({ setActiveTab }) => {
                       </td>
                       <td className="py-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {v.statut === 'ATTENTE_VALIDATION_SOLDE' && (
+                            <>
+                              <button
+                                onClick={() => handleRefuserVirement(v.id)}
+                                className="px-2 py-1 rounded bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 text-[10px] font-bold"
+                                title="Refuser (SI_RET)"
+                              >
+                                Refuser
+                              </button>
+                              <button
+                                onClick={() => handleValiderVirement(v.id)}
+                                className="px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold"
+                                title="Valider (OD+MT)"
+                              >
+                                Valider
+                              </button>
+                            </>
+                          )}
                           {v.fichierMt103Genere && (
                             <button
                               onClick={() => setQuickViewer({ id: v.id, type: 'mt103', title: 'SWIFT MT103' })}
@@ -323,7 +469,7 @@ export const Dashboard = ({ setActiveTab }) => {
       {selectedVirementId && (
         <VirementDetailModal
           isOpen={true}
-          onClose={() => setSelectedVirementId(null)}
+          onClose={() => { setSelectedVirementId(null); fetchDashboardStats(); }}
           virementId={selectedVirementId}
         />
       )}

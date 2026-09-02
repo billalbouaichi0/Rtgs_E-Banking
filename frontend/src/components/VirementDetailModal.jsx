@@ -11,7 +11,9 @@ import {
   CheckCircle2, 
   Clock, 
   Database,
-  ExternalLink
+  ExternalLink,
+  AlertOctagon,
+  Check
 } from 'lucide-react';
 import api from '../services/api';
 import StatusBadge from './StatusBadge';
@@ -21,9 +23,11 @@ export const VirementDetailModal = ({ isOpen, onClose, virementId }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [viewerFile, setViewerFile] = useState(null); // { type, title }
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState(null);
 
-  useEffect(() => {
-    if (isOpen && virementId) {
+  const loadData = () => {
+    if (virementId) {
       setLoading(true);
       api.get(`/virements/${virementId}`)
         .then((res) => {
@@ -35,7 +39,41 @@ export const VirementDetailModal = ({ isOpen, onClose, virementId }) => {
           setLoading(false);
         });
     }
+  };
+
+  useEffect(() => {
+    if (isOpen && virementId) {
+      loadData();
+    }
   }, [isOpen, virementId]);
+
+  const handleValider = async () => {
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      await api.post(`/virements/${virementId}/valider`);
+      loadData();
+    } catch (err) {
+      setActionError(err.response?.data?.message || err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRefuser = async () => {
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      await api.post(`/virements/${virementId}/refuser`, {
+        motif: 'Refusé manuellement suite à solde insuffisant dans SAB'
+      });
+      loadData();
+    } catch (err) {
+      setActionError(err.response?.data?.message || err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -82,6 +120,49 @@ export const VirementDetailModal = ({ isOpen, onClose, virementId }) => {
               </div>
             ) : v ? (
               <>
+                {/* Solde Insuffisant Alert Action Banner */}
+                {v.statut === 'ATTENTE_VALIDATION_SOLDE' && (
+                  <div className="rounded-2xl bg-amber-500/15 border border-amber-500/40 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center">
+                        <AlertOctagon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-amber-200">
+                          Solde Insuffisant dans SAB — Décision Requise
+                        </h4>
+                        <p className="text-[11px] text-amber-300/80">
+                          Montant requis : <strong>{Number(v.montant).toLocaleString('fr-FR')} DZD</strong> vs Solde disponible : <strong>{Number(v.soldeCompteTrouve || 0).toLocaleString('fr-FR')} DZD</strong>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        disabled={actionLoading}
+                        onClick={handleRefuser}
+                        className="px-3.5 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-bold flex items-center gap-1.5 disabled:opacity-50"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        <span>Refuser (SI_RET)</span>
+                      </button>
+                      <button
+                        disabled={actionLoading}
+                        onClick={handleValider}
+                        className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 disabled:opacity-50"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Valider (Forcer OD/MT)</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {actionError && (
+                  <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs">
+                    {actionError}
+                  </div>
+                )}
+
                 {/* Montant & Libellé Banner */}
                 <div className="rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/20 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
@@ -227,9 +308,13 @@ export const VirementDetailModal = ({ isOpen, onClose, virementId }) => {
                           <span className="text-emerald-400 flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5" /> Solde Suffisant (OK)
                           </span>
+                        ) : v.statut === 'ATTENTE_VALIDATION_SOLDE' ? (
+                          <span className="text-amber-400 flex items-center gap-1">
+                            <AlertOctagon className="w-3.5 h-3.5" /> Solde Insuffisant (En Attente)
+                          </span>
                         ) : v.statut === 'REJETE_SOLDE' ? (
                           <span className="text-rose-400 flex items-center gap-1">
-                            <AlertCircle className="w-3.5 h-3.5" /> Solde Insuffisant (Rejet)
+                            <AlertCircle className="w-3.5 h-3.5" /> Solde Insuffisant (Refusé)
                           </span>
                         ) : (
                           <span className="text-amber-400">Non éligible RTGS</span>
@@ -238,8 +323,13 @@ export const VirementDetailModal = ({ isOpen, onClose, virementId }) => {
                     </div>
                   </div>
                   {v.motifRejetOuIgnorer && (
-                    <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs mt-2">
-                      <strong>Motif :</strong> {v.motifRejetOuIgnorer}
+                    <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs mt-2">
+                      <strong>Info :</strong> {v.motifRejetOuIgnorer}
+                    </div>
+                  )}
+                  {v.decisionPar && (
+                    <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 text-xs mt-2">
+                      Décision prise par <strong>{v.decisionPar}</strong> ({v.decisionType}) le {new Date(v.decisionDate).toLocaleString()}
                     </div>
                   )}
                 </div>

@@ -52,7 +52,7 @@ const Remise = sequelize.define('Remise', {
     defaultValue: 0
   },
   statut: {
-    type: DataTypes.ENUM('RECU', 'EN_COURS', 'TRAITE_COMPLET', 'TRAITE_PARTIEL', 'IGNORE', 'ERREUR'),
+    type: DataTypes.ENUM('RECU', 'EN_COURS', 'TRAITE_COMPLET', 'TRAITE_PARTIEL', 'ATTENTE_VALIDATION', 'IGNORE', 'ERREUR'),
     defaultValue: 'RECU'
   },
   cheminFichier: {

@@ -50,6 +50,7 @@ class ProcessingService {
 
       let allIgnored = true;
       let countValides = 0;
+      let countAttenteValidation = 0;
       let countRejetes = 0;
       let countIgnores = 0;
 
@@ -108,7 +109,7 @@ class ProcessingService {
           continue;
         }
 
-        // Si le virement passe le filtre
+        // Si le virement passe le filtre RTGS
         allIgnored = false;
 
         // 3. Vérification du solde via Oracle 11g SAB
@@ -129,7 +130,7 @@ class ProcessingService {
         });
 
         if (hasSufficientBalance) {
-          // Solde suffisant -> Générer Fichier OD et Fichier MT103
+          // Solde suffisant -> Générer Fichier OD et Fichier MT103 automatiquement
           const banqueBenif = await BanqueRef.findByPk(virData.codeBanqueBeneficiaire);
 
           // Génération MT103
@@ -153,7 +154,7 @@ class ProcessingService {
           await TraitementLog.create({
             type: 'GENERATION_MT103',
             niveau: 'SUCCESS',
-            message: `Virement ${virData.numeroOrdre} validé. MT103 généré (${mt103FileName}) et Fichier OD généré (${odFileName}). Solde SAB : ${soldeDinar.toLocaleString()} DZD`,
+            message: `Virement ${virData.numeroOrdre} validé automatiquement. MT103 généré (${mt103FileName}) et Fichier OD généré (${odFileName}). Solde SAB : ${soldeDinar.toLocaleString()} DZD`,
             nomFichier: fileName,
             virementId: virement.id,
             details: { mt103FileName, odFileName, soldeDinar }
@@ -161,32 +162,26 @@ class ProcessingService {
 
           countValides++;
         } else {
-          // Solde insuffisant -> Générer SI Retour
-          const siRetFileName = SiRetourGenerator.getFileName(virData.libelle, virement.id);
-          const siRetContent = SiRetourGenerator.generate(virData);
-          const siRetPath = path.join(FOLDERS.si_retour, siRetFileName);
-          fs.writeFileSync(siRetPath, siRetContent, 'utf-8');
-
-          const motif = oracleRes.found
+          // Solde insuffisant -> Notification & Mise en attente de décision (Valider / Refuser)
+          const motifAlerte = oracleRes.found
             ? `Solde insuffisant (${soldeDinar.toLocaleString()} DZD < ${virData.montant.toLocaleString()} DZD)`
             : `Compte donneur d'ordre (${virData.compteDonneur15}) introuvable dans SAB (DZD)`;
 
           await virement.update({
-            statut: 'REJETE_SOLDE',
-            motifRejetOuIgnorer: motif,
-            fichierSiRetGenere: siRetFileName
+            statut: 'ATTENTE_VALIDATION_SOLDE',
+            motifRejetOuIgnorer: `${motifAlerte} - En attente de validation ou refus manuel.`
           });
 
           await TraitementLog.create({
-            type: 'GENERATION_SI_RET',
-            niveau: 'ERROR',
-            message: `Virement ${virData.numeroOrdre} rejeté. Fichier ${siRetFileName} généré. Motif : ${motif}`,
+            type: 'ALERTE_SOLDE',
+            niveau: 'WARNING',
+            message: `[ALERTE SOLDE] Virement N° ${virData.numeroOrdre} : ${motifAlerte}. Veuillez valider (forçage) ou refuser l'opération.`,
             nomFichier: fileName,
             virementId: virement.id,
-            details: { siRetFileName, motif, soldeDinar }
+            details: { soldeDinar, montantRequis: virData.montant, compteDonneur: virData.compteDonneur15 }
           });
 
-          countRejetes++;
+          countAttenteValidation++;
         }
       }
 
@@ -205,10 +200,10 @@ class ProcessingService {
         } catch (e) {
           console.error('[ProcessingService] Erreur déplacement vers ignorer', e);
         }
+      } else if (countAttenteValidation > 0) {
+        globalStatut = 'ATTENTE_VALIDATION';
       } else if (countRejetes > 0 && countValides > 0) {
         globalStatut = 'TRAITE_PARTIEL';
-      } else if (countRejetes > 0 && countValides === 0) {
-        globalStatut = 'TRAITE_COMPLET'; // Tous traités mais rejetés
       }
 
       await remise.update({ statut: globalStatut });
@@ -218,6 +213,7 @@ class ProcessingService {
         remiseId: remise.id,
         nomFichier: fileName,
         countValides,
+        countAttenteValidation,
         countRejetes,
         countIgnores,
         statut: globalStatut
@@ -232,6 +228,160 @@ class ProcessingService {
       });
       throw err;
     }
+  }
+
+  /**
+   * Valide manuellement un virement en attente de décision solde (Génère OD et MT103)
+   * @param {number} virementId ID du virement
+   * @param {Object} user Utilisateur effectuant la validation
+   */
+  async validerVirementManuellement(virementId, user = null) {
+    const virement = await Virement.findByPk(virementId, { include: [{ model: Remise, as: 'remise' }] });
+    if (!virement) {
+      throw new Error(`Virement ID ${virementId} introuvable.`);
+    }
+
+    if (virement.statut === 'VALIDE_TRAITE') {
+      throw new Error(`Ce virement est déjà validé et traité.`);
+    }
+
+    const username = user?.username || user?.fullName || 'Admin BDL';
+
+    // 1. Récupération de la banque bénéficiaire
+    const banqueBenif = await BanqueRef.findByPk(virement.codeBanqueBeneficiaire);
+
+    // 2. Génération du MT103
+    const mt103Content = Mt103Generator.generate(virement, banqueBenif);
+    const mt103FileName = `MT103_${virement.id}_${virement.numeroOrdre}.txt`;
+    const mt103Path = path.join(FOLDERS.generated_mt103, mt103FileName);
+    fs.writeFileSync(mt103Path, mt103Content, 'utf-8');
+
+    // 3. Génération du Fichier OD
+    const odContent = OdGenerator.generate(virement);
+    const odFileName = `OD_${virement.id}_${virement.numeroOrdre}.txt`;
+    const odPath = path.join(FOLDERS.generated_od, odFileName);
+    fs.writeFileSync(odPath, odContent, 'utf-8');
+
+    // 4. Mise à jour du virement
+    await virement.update({
+      statut: 'VALIDE_TRAITE',
+      fichierMt103Genere: mt103FileName,
+      fichierOdGenere: odFileName,
+      decisionPar: username,
+      decisionDate: new Date(),
+      decisionType: 'VALIDE_FORCE',
+      motifRejetOuIgnorer: `Validé manuellement avec forçage par ${username}`
+    });
+
+    // 5. Log d'audit
+    await TraitementLog.create({
+      type: 'VALIDATION_MANUELLE',
+      niveau: 'SUCCESS',
+      message: `Virement N° ${virement.numeroOrdre} VALIDÉ manuellement par ${username}. MT103 (${mt103FileName}) et Fichier OD (${odFileName}) générés avec succès.`,
+      nomFichier: virement.remise?.nomFichier || 'N/A',
+      virementId: virement.id,
+      details: { mt103FileName, odFileName, username }
+    });
+
+    // 6. Recalculer le statut global de la remise
+    if (virement.remiseId) {
+      await this.recalculateRemiseStatut(virement.remiseId);
+    }
+
+    return {
+      success: true,
+      message: 'Virement validé avec succès. Fichiers OD et MT103 générés.',
+      virement
+    };
+  }
+
+  /**
+   * Refuse manuellement un virement en attente de décision solde (Génère le SI Retour)
+   * @param {number} virementId ID du virement
+   * @param {Object} user Utilisateur effectuant le refus
+   * @param {string} motif Motif du refus
+   */
+  async refuserVirementManuellement(virementId, user = null, motif = null) {
+    const virement = await Virement.findByPk(virementId, { include: [{ model: Remise, as: 'remise' }] });
+    if (!virement) {
+      throw new Error(`Virement ID ${virementId} introuvable.`);
+    }
+
+    if (virement.statut === 'REJETE_SOLDE') {
+      throw new Error(`Ce virement est déjà rejeté.`);
+    }
+
+    const username = user?.username || user?.fullName || 'Admin BDL';
+    const motifFinal = motif || `Refusé manuellement suite à solde insuffisant par ${username}`;
+
+    // 1. Génération du Fichier SI Retour
+    const siRetFileName = SiRetourGenerator.getFileName(virement.libelle, virement.id);
+    const siRetContent = SiRetourGenerator.generate(virement);
+    const siRetPath = path.join(FOLDERS.si_retour, siRetFileName);
+    fs.writeFileSync(siRetPath, siRetContent, 'utf-8');
+
+    // 2. Mise à jour du virement
+    await virement.update({
+      statut: 'REJETE_SOLDE',
+      fichierSiRetGenere: siRetFileName,
+      motifRejetOuIgnorer: motifFinal,
+      decisionPar: username,
+      decisionDate: new Date(),
+      decisionType: 'REFUSE_MANUEL'
+    });
+
+    // 3. Log d'audit
+    await TraitementLog.create({
+      type: 'REFUS_MANUEL',
+      niveau: 'ERROR',
+      message: `Virement N° ${virement.numeroOrdre} REFUSÉ manuellement par ${username}. Fichier SI Retour généré (${siRetFileName}). Motif : ${motifFinal}`,
+      nomFichier: virement.remise?.nomFichier || 'N/A',
+      virementId: virement.id,
+      details: { siRetFileName, motif: motifFinal, username }
+    });
+
+    // 4. Recalculer le statut global de la remise
+    if (virement.remiseId) {
+      await this.recalculateRemiseStatut(virement.remiseId);
+    }
+
+    return {
+      success: true,
+      message: 'Virement refusé. Fichier SI Retour généré.',
+      virement
+    };
+  }
+
+  /**
+   * Recalcule et met à jour le statut global d'une remise selon ses virements
+   * @param {number} remiseId 
+   */
+  async recalculateRemiseStatut(remiseId) {
+    const remise = await Remise.findByPk(remiseId);
+    if (!remise) return;
+
+    const virements = await Virement.findAll({ where: { remiseId } });
+    if (!virements || virements.length === 0) return;
+
+    const hasPending = virements.some(v => v.statut === 'ATTENTE_VALIDATION_SOLDE' || v.statut === 'EN_ATTENTE');
+    const hasValides = virements.some(v => v.statut === 'VALIDE_TRAITE');
+    const hasRejetes = virements.some(v => v.statut === 'REJETE_SOLDE');
+    const allIgnored = virements.every(v => v.statut === 'IGNORE_FILTRE');
+
+    let newStatut = 'TRAITE_COMPLET';
+    if (allIgnored) {
+      newStatut = 'IGNORE';
+    } else if (hasPending) {
+      newStatut = 'ATTENTE_VALIDATION';
+    } else if (hasValides && hasRejetes) {
+      newStatut = 'TRAITE_PARTIEL';
+    } else if (hasValides && !hasRejetes) {
+      newStatut = 'TRAITE_COMPLET';
+    } else if (!hasValides && hasRejetes) {
+      newStatut = 'TRAITE_COMPLET';
+    }
+
+    await remise.update({ statut: newStatut });
   }
 }
 
