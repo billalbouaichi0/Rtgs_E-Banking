@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import Login from './pages/Login';
@@ -19,9 +20,9 @@ const MainLayout = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4 text-slate-400">
-        <div className="w-10 h-10 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-        <span className="text-xs font-semibold">Initialisation de l'application BDL RTGS...</span>
+      <div className="min-h-screen bg-[#090d16] flex flex-col items-center justify-center gap-4 text-slate-400">
+        <div className="w-10 h-10 border-3 border-[#772281] border-t-transparent rounded-full animate-spin"></div>
+        <span className="text-xs font-semibold text-slate-300">Initialisation de l'application BDL RTGS...</span>
       </div>
     );
   }
@@ -54,7 +55,7 @@ const MainLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen bg-slate-100/70 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col selection:bg-[#772281] selection:text-white transition-colors duration-200">
       <Navbar />
       <div className="flex-1 flex overflow-hidden">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -71,14 +72,12 @@ export const App = () => {
   const search = window.location.search;
   const isResetPassword = pathname.includes('/reset-password') || search.includes('token=');
 
-  if (isResetPassword) {
-    return <ResetPassword />;
-  }
-
   return (
-    <AuthProvider>
-      <MainLayout />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        {isResetPassword ? <ResetPassword /> : <MainLayout />}
+      </AuthProvider>
+    </ThemeProvider>
   );
 };
 

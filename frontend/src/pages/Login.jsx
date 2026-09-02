@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Shield, Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { Shield, Lock, User, AlertCircle, ArrowRight, Sun, Moon } from 'lucide-react';
 
 export const Login = () => {
   const { login } = useAuth();
+  const { toggleTheme, isDark } = useTheme();
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('admin123');
   const [loading, setLoading] = useState(false);
@@ -33,7 +35,28 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#070a12] p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-[#070a12] p-4 relative overflow-hidden transition-colors duration-200">
+      {/* Top right Theme Switch */}
+      <div className="absolute top-4 right-4 z-20">
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-[#772281] dark:hover:text-[#f9b307] shadow-md transition-all text-xs font-semibold"
+          title={isDark ? 'Passer en Mode Clair' : 'Passer en Mode Sombre'}
+        >
+          {isDark ? (
+            <>
+              <Sun className="w-4 h-4 text-[#f9b307]" />
+              <span>Mode Clair</span>
+            </>
+          ) : (
+            <>
+              <Moon className="w-4 h-4 text-[#772281]" />
+              <span>Mode Sombre</span>
+            </>
+          )}
+        </button>
+      </div>
+
       {/* Background ambient decorative glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[32rem] h-[32rem] bg-[#772281]/20 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-10 right-10 w-80 h-80 bg-[#f9b307]/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -41,17 +64,17 @@ export const Login = () => {
       <div className="w-full max-w-md relative z-10 space-y-6">
         {/* Brand Card with Official BDL Logo */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center justify-center px-5 py-3 rounded-2xl bg-white shadow-xl shadow-[#772281]/25 border border-slate-700/60 mb-1">
+          <div className="inline-flex items-center justify-center px-5 py-3 rounded-2xl bg-white shadow-xl shadow-[#772281]/25 border border-slate-200 dark:border-slate-700/60 mb-1">
             <img 
               src="/logo-bdl.png" 
               alt="Logo BDL" 
               className="h-10 w-auto object-contain"
             />
           </div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight">
+          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Banque de Développement Local
           </h1>
-          <p className="text-xs font-bold text-[#f9b307] tracking-wider uppercase">
+          <p className="text-xs font-bold text-[#772281] dark:text-[#f9b307] tracking-wider uppercase">
             Plateforme RTGS e-Banking • Traitement EDI & MT103
           </p>
         </div>

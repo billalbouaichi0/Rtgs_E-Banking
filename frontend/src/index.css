@@ -14,9 +14,8 @@
   }
 
   body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #090d16;
-    color: #f8fafc;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
 
   code, pre {
@@ -24,23 +23,131 @@
   }
 }
 
-/* Glassmorphism & Banking Glow with BDL Colors */
-.glass-panel {
-  background: rgba(15, 23, 42, 0.80);
+/* Dark Mode Panels */
+html.dark .glass-panel {
+  background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
 }
 
-.glass-panel-hover {
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.glass-panel-hover:hover {
-  background: rgba(26, 20, 40, 0.85);
-  border-color: rgba(119, 34, 129, 0.4);
+html.dark .glass-panel-hover:hover {
+  background: rgba(26, 20, 40, 0.9);
+  border-color: rgba(119, 34, 129, 0.5);
   transform: translateY(-2px);
   box-shadow: 0 12px 30px -10px rgba(119, 34, 129, 0.3);
+}
+
+/* Light Mode Panels */
+html.light .glass-panel {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+  color: #0f172a;
+}
+
+html.light .glass-panel-hover:hover {
+  background: #ffffff;
+  border-color: rgba(119, 34, 129, 0.45);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(119, 34, 129, 0.15);
+}
+
+/* Light Mode Helpers */
+html.light .text-slate-400 {
+  color: #475569 !important;
+}
+
+html.light .text-slate-300 {
+  color: #334155 !important;
+}
+
+html.light .text-slate-200 {
+  color: #1e293b !important;
+}
+
+html.light .text-white {
+  color: #0f172a !important;
+}
+
+html.light .bg-slate-900 {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light .bg-slate-950 {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light .bg-slate-950\/80 {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.light .bg-slate-950\/60 {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.light .bg-slate-950\/70 {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html.light .bg-slate-800 {
+  background-color: #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+html.light .border-slate-800 {
+  border-color: #e2e8f0 !important;
+}
+
+html.light .border-slate-700 {
+  border-color: #cbd5e1 !important;
+}
+
+html.light .border-slate-700\/80 {
+  border-color: #cbd5e1 !important;
+}
+
+html.light .divide-slate-800\/60 > * + * {
+  border-color: #e2e8f0 !important;
+}
+
+html.light tr:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Keep Corporate BDL Header White Text in Light & Dark */
+.bdl-gradient-corporate h1,
+.bdl-gradient-corporate p,
+.bdl-gradient-corporate span,
+.bdl-gradient-corporate strong,
+.bdl-gradient-header h1,
+.bdl-gradient-header p,
+.bdl-gradient-header span {
+  color: #ffffff !important;
+}
+
+.bdl-gradient-corporate .text-\[\#f9b307\] {
+  color: #f9b307 !important;
+}
+
+.bdl-gradient-corporate button.bg-\[\#f9b307\] {
+  background-color: #f9b307 !important;
+  color: #772281 !important;
+}
+
+.bdl-gradient-corporate button.bg-\[\#f9b307\] span,
+.bdl-gradient-corporate button.bg-\[\#f9b307\] svg {
+  color: #772281 !important;
 }
 
 /* BDL Branded Gradients */
@@ -74,15 +181,28 @@
   height: 6px;
 }
 
-::-webkit-scrollbar-track {
+html.dark ::-webkit-scrollbar-track {
   background: rgba(11, 15, 25, 0.7);
 }
 
-::-webkit-scrollbar-thumb {
+html.dark ::-webkit-scrollbar-thumb {
   background: rgba(77, 21, 84, 0.6);
   border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
+html.dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(119, 34, 129, 0.9);
+}
+
+html.light ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #772281;
 }

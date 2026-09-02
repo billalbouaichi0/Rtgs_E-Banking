@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTheme } from '../context/ThemeContext';
 import { 
   Lock, 
   KeyRound, 
@@ -6,11 +7,14 @@ import {
   AlertCircle, 
   ArrowRight, 
   Eye, 
-  EyeOff 
+  EyeOff,
+  Sun,
+  Moon
 } from 'lucide-react';
 import api from '../services/api';
 
 export const ResetPassword = () => {
+  const { toggleTheme, isDark } = useTheme();
   const [token, setToken] = useState('');
   const [tokenInfo, setTokenInfo] = useState(null);
   const [tokenValidating, setTokenValidating] = useState(true);
@@ -76,7 +80,28 @@ export const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#070a12] flex flex-col justify-center items-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-slate-100 dark:bg-[#070a12] flex flex-col justify-center items-center p-4 relative overflow-hidden transition-colors duration-200">
+      {/* Top right Theme Switch */}
+      <div className="absolute top-4 right-4 z-20">
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-[#772281] dark:hover:text-[#f9b307] shadow-md transition-all text-xs font-semibold"
+          title={isDark ? 'Passer en Mode Clair' : 'Passer en Mode Sombre'}
+        >
+          {isDark ? (
+            <>
+              <Sun className="w-4 h-4 text-[#f9b307]" />
+              <span>Mode Clair</span>
+            </>
+          ) : (
+            <>
+              <Moon className="w-4 h-4 text-[#772281]" />
+              <span>Mode Sombre</span>
+            </>
+          )}
+        </button>
+      </div>
+
       {/* Background Decorative Glow */}
       <div className="absolute -top-40 -left-40 w-96 h-96 bg-[#772281]/25 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-[#f9b307]/15 rounded-full blur-3xl pointer-events-none"></div>
@@ -84,17 +109,17 @@ export const ResetPassword = () => {
       <div className="w-full max-w-md space-y-6 relative z-10">
         {/* Header Branding with Logo */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center justify-center px-5 py-3 rounded-2xl bg-white shadow-xl shadow-[#772281]/25 border border-slate-700/60 mb-1">
+          <div className="inline-flex items-center justify-center px-5 py-3 rounded-2xl bg-white shadow-xl shadow-[#772281]/25 border border-slate-200 dark:border-slate-700/60 mb-1">
             <img 
               src="/logo-bdl.png" 
               alt="Logo BDL" 
               className="h-10 w-auto object-contain"
             />
           </div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight">
+          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Banque de Développement Local
           </h1>
-          <p className="text-xs text-[#f9b307] font-bold tracking-wider uppercase">
+          <p className="text-xs text-[#772281] dark:text-[#f9b307] font-bold tracking-wider uppercase">
             Initialisation du Mot de Passe RTGS
           </p>
         </div>
