@@ -154,7 +154,8 @@ export const VirementsList = () => {
               <option value="ALL">Tous les Statuts</option>
               <option value="ATTENTE_VALIDATION_SOLDE">🚨 Solde Insuffisant (Action Requise)</option>
               <option value="VALIDE_TRAITE">Traités & Validés (OD + MT103)</option>
-              <option value="REJETE_SOLDE">Refusés / Rejetés (SI Retour)</option>
+              <option value="REJETE_DOUBLON">🚫 Rejetés pour Doublon (SI Retour)</option>
+              <option value="REJETE_SOLDE">Refusés / Rejetés Solde (SI Retour)</option>
               <option value="IGNORE_FILTRE">Ignorés (Filtre RTGS)</option>
               <option value="EN_ATTENTE">En Attente</option>
             </select>

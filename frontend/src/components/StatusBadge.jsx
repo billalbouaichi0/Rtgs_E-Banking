@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, XCircle, AlertTriangle, Clock, AlertOctagon } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertTriangle, Clock, AlertOctagon, Copy } from 'lucide-react';
 
 export const StatusBadge = ({ statut }) => {
   switch (statut) {
@@ -22,6 +22,13 @@ export const StatusBadge = ({ statut }) => {
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20 shadow-sm">
           <XCircle className="w-3.5 h-3.5 text-rose-400" />
           Refusé / Rejeté (SI Retour)
+        </span>
+      );
+    case 'REJETE_DOUBLON':
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30 shadow-sm">
+          <Copy className="w-3.5 h-3.5 text-purple-400" />
+          Rejeté (Doublon Détecté)
         </span>
       );
     case 'IGNORE_FILTRE':

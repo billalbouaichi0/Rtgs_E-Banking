@@ -6,6 +6,7 @@ const EdiParser = require('../parsers/ediParser');
 const Mt103Generator = require('../generators/mt103Generator');
 const OdGenerator = require('../generators/odGenerator');
 const SiRetourGenerator = require('../generators/siRetourGenerator');
+const { Op } = require('sequelize');
 const { Remise, Virement, BanqueRef, TraitementLog } = require('../models');
 
 const RTGS_MIN_AMOUNT = Number(process.env.RTGS_MIN_AMOUNT || 1000000);
@@ -53,6 +54,9 @@ class ProcessingService {
       let countAttenteValidation = 0;
       let countRejetes = 0;
       let countIgnores = 0;
+
+      const seenLibelles = new Set();
+      const seenNomsBenef = new Set();
 
       for (const virData of parsedData.virements) {
         // Enregistrement initial du virement
@@ -112,7 +116,74 @@ class ProcessingService {
         // Si le virement passe le filtre RTGS
         allIgnored = false;
 
-        // 3. Vérification du solde via Oracle 11g SAB
+        // 3. Contrôle anti-doublon (Nom ou Libellé)
+        const normLibelle = (virData.libelle || '').trim().toUpperCase();
+        const normNomBenef = (virData.nomBeneficiaire || '').trim().toUpperCase();
+
+        let motifDoublon = null;
+
+        if (normLibelle && seenLibelles.has(normLibelle)) {
+          motifDoublon = `Doublon intra-fichier : Le libellé "${virData.libelle}" apparaît en double dans cette remise`;
+        } else if (normNomBenef && seenNomsBenef.has(normNomBenef)) {
+          motifDoublon = `Doublon intra-fichier : Le nom du bénéficiaire "${virData.nomBeneficiaire}" apparaît en double dans cette remise`;
+        } else {
+          // Contrôle en base de données contre les virements existants actifs ou traités
+          const existingDbVirement = await Virement.findOne({
+            where: {
+              id: { [Op.ne]: virement.id },
+              remiseId: { [Op.ne]: remise.id },
+              statut: { [Op.in]: ['VALIDE_TRAITE', 'ATTENTE_VALIDATION_SOLDE', 'EN_ATTENTE'] },
+              [Op.or]: [
+                { libelle: virData.libelle },
+                {
+                  nomBeneficiaire: virData.nomBeneficiaire,
+                  ribDonneur: virData.ribDonneur,
+                  montant: virData.montant
+                }
+              ]
+            }
+          });
+
+          if (existingDbVirement) {
+            if (existingDbVirement.libelle === virData.libelle) {
+              motifDoublon = `Doublon en base : Virement avec le même libellé "${virData.libelle}" déjà existant (ID #${existingDbVirement.id})`;
+            } else {
+              motifDoublon = `Doublon en base : Virement identique pour "${virData.nomBeneficiaire}" déjà existant (ID #${existingDbVirement.id})`;
+            }
+          }
+        }
+
+        if (motifDoublon) {
+          // Rejeter le virement pour doublon et générer le fichier SI_RETOUR
+          const siRetFileName = SiRetourGenerator.getFileName(virData.libelle, virement.id);
+          const siRetContent = SiRetourGenerator.generate(virData);
+          const siRetPath = path.join(FOLDERS.si_retour, siRetFileName);
+          fs.writeFileSync(siRetPath, siRetContent, 'utf-8');
+
+          await virement.update({
+            statut: 'REJETE_DOUBLON',
+            motifRejetOuIgnorer: motifDoublon,
+            fichierSiRetGenere: siRetFileName
+          });
+
+          await TraitementLog.create({
+            type: 'DOUBLON_DETECTE',
+            niveau: 'WARNING',
+            message: `[DOUBLON REJETÉ] Virement N° ${virData.numeroOrdre} rejeté : ${motifDoublon}. Fichier SI Retour généré (${siRetFileName}).`,
+            nomFichier: fileName,
+            virementId: virement.id,
+            details: { motifDoublon, siRetFileName, libelle: virData.libelle, nomBeneficiaire: virData.nomBeneficiaire }
+          });
+
+          countRejetes++;
+          continue;
+        }
+
+        // Mémoriser le libellé et le nom pour détecter les doublons suivants
+        if (normLibelle) seenLibelles.add(normLibelle);
+        if (normNomBenef) seenNomsBenef.add(normNomBenef);
+
+        // 4. Vérification du solde via Oracle 11g SAB
         let oracleRes;
         try {
           oracleRes = await oracleService.checkAccountBalance(virData.compteDonneur15);
@@ -365,7 +436,7 @@ class ProcessingService {
 
     const hasPending = virements.some(v => v.statut === 'ATTENTE_VALIDATION_SOLDE' || v.statut === 'EN_ATTENTE');
     const hasValides = virements.some(v => v.statut === 'VALIDE_TRAITE');
-    const hasRejetes = virements.some(v => v.statut === 'REJETE_SOLDE');
+    const hasRejetes = virements.some(v => v.statut === 'REJETE_SOLDE' || v.statut === 'REJETE_DOUBLON');
     const allIgnored = virements.every(v => v.statut === 'IGNORE_FILTRE');
 
     let newStatut = 'TRAITE_COMPLET';

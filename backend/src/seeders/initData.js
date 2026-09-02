@@ -26,6 +26,26 @@ const seedDatabase = async () => {
   try {
     ensureDirectoriesExist();
     await sequelize.sync({ alter: true });
+    
+    // Assurer la mise à jour de l'ENUM statut dans MySQL
+    if (sequelize.getDialect() === 'mysql') {
+      try {
+        await sequelize.query(`
+          ALTER TABLE \`virements\` 
+          MODIFY COLUMN \`statut\` ENUM(
+            'VALIDE_TRAITE',
+            'REJETE_SOLDE',
+            'REJETE_DOUBLON',
+            'IGNORE_FILTRE',
+            'EN_ATTENTE',
+            'ATTENTE_VALIDATION_SOLDE',
+            'ERREUR'
+          ) DEFAULT 'EN_ATTENTE';
+        `);
+      } catch (e) {
+        // Table non créée ou déjà à jour
+      }
+    }
     console.log('[Database] Tables synchronisées.');
 
     // 1. Initialisation des utilisateurs

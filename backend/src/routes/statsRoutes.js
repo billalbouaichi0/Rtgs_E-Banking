@@ -10,13 +10,14 @@ router.get('/dashboard', verifyToken, async (req, res) => {
     const totalVirements = await Virement.count();
     const validesCount = await Virement.count({ where: { statut: 'VALIDE_TRAITE' } });
     const attenteSoldeCount = await Virement.count({ where: { statut: 'ATTENTE_VALIDATION_SOLDE' } });
-    const rejetesCount = await Virement.count({ where: { statut: 'REJETE_SOLDE' } });
+    const rejetesCount = await Virement.count({ where: { statut: { [Op.in]: ['REJETE_SOLDE', 'REJETE_DOUBLON'] } } });
+    const doublonsCount = await Virement.count({ where: { statut: 'REJETE_DOUBLON' } });
     const ignoresCount = await Virement.count({ where: { statut: 'IGNORE_FILTRE' } });
 
     // Montants totaux
     const totalMontantValide = (await Virement.sum('montant', { where: { statut: 'VALIDE_TRAITE' } })) || 0;
     const totalMontantAttente = (await Virement.sum('montant', { where: { statut: 'ATTENTE_VALIDATION_SOLDE' } })) || 0;
-    const totalMontantRejete = (await Virement.sum('montant', { where: { statut: 'REJETE_SOLDE' } })) || 0;
+    const totalMontantRejete = (await Virement.sum('montant', { where: { statut: { [Op.in]: ['REJETE_SOLDE', 'REJETE_DOUBLON'] } } })) || 0;
     const totalMontantIgnore = (await Virement.sum('montant', { where: { statut: 'IGNORE_FILTRE' } })) || 0;
     const totalMontantGlobal = (await Virement.sum('montant')) || 0;
 
@@ -59,6 +60,7 @@ router.get('/dashboard', verifyToken, async (req, res) => {
         validesCount,
         attenteSoldeCount,
         rejetesCount,
+        doublonsCount,
         ignoresCount,
         totalMontantValide: Number(totalMontantValide),
         totalMontantAttente: Number(totalMontantAttente),

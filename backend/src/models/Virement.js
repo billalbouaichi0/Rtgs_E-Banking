@@ -79,6 +79,7 @@ const Virement = sequelize.define('Virement', {
     type: DataTypes.ENUM(
       'VALIDE_TRAITE',
       'REJETE_SOLDE',
+      'REJETE_DOUBLON',
       'IGNORE_FILTRE',
       'EN_ATTENTE',
       'ATTENTE_VALIDATION_SOLDE',

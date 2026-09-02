@@ -13,7 +13,8 @@ import {
   Database,
   ExternalLink,
   AlertOctagon,
-  Check
+  Check,
+  Copy
 } from 'lucide-react';
 import api from '../services/api';
 import StatusBadge from './StatusBadge';
@@ -311,6 +312,10 @@ export const VirementDetailModal = ({ isOpen, onClose, virementId }) => {
                         ) : v.statut === 'ATTENTE_VALIDATION_SOLDE' ? (
                           <span className="text-amber-400 flex items-center gap-1">
                             <AlertOctagon className="w-3.5 h-3.5" /> Solde Insuffisant (En Attente)
+                          </span>
+                        ) : v.statut === 'REJETE_DOUBLON' ? (
+                          <span className="text-purple-400 flex items-center gap-1">
+                            <Copy className="w-3.5 h-3.5" /> Doublon Détecté (Rejeté)
                           </span>
                         ) : v.statut === 'REJETE_SOLDE' ? (
                           <span className="text-rose-400 flex items-center gap-1">
