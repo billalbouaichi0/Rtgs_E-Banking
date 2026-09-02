@@ -1,0 +1,12 @@
+{
+  "name": "bdl-rtgs-ebanking-suite",
+  "version": "1.0.0",
+  "description": "Suite complète RTGS e-Banking BDL - Traitement EDI, MT103, OD, SI Retour",
+  "scripts": {
+    "start:backend": "cd backend && npm start",
+    "start:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "seed": "cd backend && npm run seed"
+  }
+}

@@ -1,0 +1,146 @@
+jai le fichier edi de ce format  :
+
+| SectionN°DonnéeFormatO/FLongueurPosition / ValeurCommentaires |    |                                                   |      |                  |    |                                  |                                                                            |
+| ------------------------------------------------------------- | -- | ------------------------------------------------- | ---- | ---------------- | -- | -------------------------------- | -------------------------------------------------------------------------- |
+| **ENTÊTE**                                                    | 1  | Entête de la remise                               | 4A   | O                | 4  | `VIRM`                           | Identifiant fixe du début de la remise                                     |
+| **ENTÊTE**                                                    | 2  | Identifiant de la banque du donneur d'ordre       | 3N   | O                | 3  | Exemple : `005`                  | Code banque                                                                |
+| **ENTÊTE**                                                    | 3  | Nature et type d'opération                        | 3N   | O                | 3  | `010`                            | Virement domestique clientèle                                              |
+| **ENTÊTE**                                                    | 4  | Nature des fonds                                  | 1N   | O                | 1  | `0` ou `1`                       | `0` = Dinars, `1` = Dinars convertibles                                    |
+| **ENTÊTE**                                                    | 5  | Indicateur de présence RIB/IBAN                   | 1N   | O                | 1  | `1` ou `2`                       | `1` = utilisation RIB, `2` = utilisation IBAN                              |
+| **ENTÊTE**                                                    | 6  | RIB du donneur d'ordre                            | 20N  | O / Conditionnel | 20 | Exemple : `00500133400218153023` | Code banque (3) + Code agence (5) + N° compte (10) + Clé (2)               |
+| **ENTÊTE**                                                    | 7  | Préfixe IBAN                                      | 4AN  | F                | 4  | Exemple : `DZ00`                 | Code pays ISO sur 2 positions + clé sur 2 positions. Sinon espaces         |
+| **ENTÊTE**                                                    | 8  | Nom et prénom / Raison sociale du donneur d'ordre | 50AN | O                | 50 | Texte                            | Nom complet ou raison sociale                                              |
+| **ENTÊTE**                                                    | 9  | Adresse du donneur d'ordre                        | 70AN | O                | 70 | Texte                            | Adresse complète du donneur d'ordre                                        |
+| **ENTÊTE**                                                    | 10 | Date de remise de l'ordre                         | 8N   | O                | 8  | `AAAAMMJJ`                       | Exemple : `20260902`                                                       |
+| **ENTÊTE**                                                    | 11 | Référence de la remise                            | 3N   | O                | 3  | Exemple : `001`                  | Numéro séquentiel de la remise                                             |
+| **ENTÊTE**                                                    | 12 | Nombre d'opérations dans la remise                | 6N   | O                | 6  | Exemple : `000025`               | Nombre total d'opérations                                                  |
+| **ENTÊTE**                                                    | 13 | Montant total                                     | 16N  | O                | 16 | Numérique                        | Montant total des opérations contenues dans la remise                      |
+| **ENTÊTE**                                                    | 14 | Filler                                            | AN   | F                | 31 | Espaces                          | Zone de remplissage                                                        |
+| **CORPS**                                                     | 15 | Numéro d'ordre de l'opération de virement         | 10N  | O                | 10 | Exemple : `0000010207`           | Numéro séquentiel (6 positions) + Mois (2 positions) + Année (2 positions) |
+| **CORPS**                                                     | 16 | Indicateur de présence RIB/IBAN                   | 1N   | O                | 1  | `1` ou `2`                       | `1` = utilisation RIB, `2` = utilisation IBAN                              |
+| **CORPS**                                                     | 17 | RIB du bénéficiaire                               | 20N  | O / Conditionnel | 20 | Exemple : `00806001906006101410` | Code banque (3) + Code agence (5) + N° compte (10) + Clé (2)               |
+| **CORPS**                                                     | 18 | Préfixe IBAN                                      | 4AN  | F                | 4  | Exemple : `DZ00`                 | Code pays ISO sur 2 positions + clé sur 2 positions. Sinon espaces         |
+| **CORPS**                                                     | 19 | Nom et prénom / Raison sociale du bénéficiaire    | 50AN | O                | 50 | Texte                            | Nom complet ou raison sociale du bénéficiaire                              |
+| **CORPS**                                                     | 20 | Adresse du bénéficiaire                           | 70AN | O                | 70 | Texte                            | Adresse complète du bénéficiaire                                           |
+| **CORPS**                                                     | 21 | Montant de l'opération de virement                | 15N  | O                | 15 | Exemple : `000000000500000`      | Montant exprimé selon la structure décimale définie                        |
+| **CORPS**                                                     | 22 | Libellé                                           | 70AN | O                | 70 | Texte                            | Zone utilisée par le donneur d'ordre pour préciser l'objet de l'opération  |
+| **CORPS**                                                     | 23 | Filler                                            | AN   | F                | 80 | Espaces                          | Zone de remplissage                                                        |
+| **FIN DE REMISE**                                             | 24 | Fin de la remise                                  | 4A   | O                | 4  | `FVIR`                           | Identifiant fixe de fin de remise                                          |
+| **FIN DE REMISE**                                             | 25 | Filler                                            | AN   | F                | 96 | Espaces                          | Zone de remplissage<br>                                                    |
+
+le fichier swift mt103 
+{1\:F01BDLODZALAXXXSN....ISN.}{2\:I103BALGDZALXXXXN}{3:{103\:DLP}}{4:
+:20:{libele de la transaction   } 
+:23B\:CRED
+:23E\:SDVA
+:32A:{la date valeur du virement format yyMMDD devise DZD puis le montant avec une virgule a la fin exemple : 260809DZD2437358,],
+:50K:/{le rib donneur d'ordre }
+{adresse }
+{adresse }
+{adresse } ici adresse du donneur dordre decoupe en 3 chaqueune dans une ligne&#x20;
+:53A:/9711000005
+BDLODZALXXX
+:57A:/{le compte banque benif a partir du codebanque du rib benificiare}
+{le bic du la banque benif }
+:59:/{le rib benif}
+{adresse }
+{adresse }
+{adresse } ici adresse du benif dordre decoupe en 3 chaqueune dans une ligne&#x20;
+:70:{libele de la transaction}
+:71A\:SHA
+:72:/CODTYPTR/001
+-}
+fichier od : 
+Code établissement = code banque donneur ordre  3positiotn
+code agence  = code agence donneur ordre 5 positiotn 
+montant  = montant de la transaction 20position
+filler = 70 
+fichier si retour = 
+le virement {libele}  du montant {montant de la transaction } na pas ete comptabilise  
+
+je vais utilise une base de donne mysql express sequelize et un frontend pour visualiser les virement ..ect login deux role (administrateur et consultation )
+je surveille un dossier source  si je trouve un fichier edi je le copie vers un repertoir input puis je le check (input ) si le montant est superieur a un million de dinar et les code banque du benif et donneur dordre sont different je passe au traitement sinon je lignore je le deplace de input vers input/ignorer 
+traitement je verifie le solde du compte donneur dordre a laide d'une requette oracle 11 g 
+la requette  : select  s.soldecen,c.comptecom
+from sabstd.zcompte0 c
+left join sabstd.zsolde0 s on trim(comptecom)=trim(soldecom)&#x20;
+
+where
+comptedev='DZD' and length(trim(comptecom))=15
+and trim(comptecom) = 'Compte\_donneur\_ordre'
+group by comptecom,soldecen 
+
+si le solde est suffisant je genere son fichier OD je le place dans le repertoir generated\_od et son fichier mt103 
+sinon je genere son si\_retour le fichier si retour le nom doit etre SI\_RET\_Libelle 
+format fichier EDI avec les position 
+
+| Enregistrement   Entête (EE) :                             |         |         |         |
+| ---------------------------------------------------------- | ------- | ------- | ------- |
+|                                                            |         |         |         |
+| Données                                                    | Pos deb | Pos fin | longeur |
+|                                                            |         |         |         |
+|                                                            |         |         |         |
+| Entête   de la remise                                      | 1       | 4       | 4       |
+| Identifiant   de la banque du donneur d’ordre              | 5       | 7       | 3       |
+| Nature   et type d’opération                               | 8       | 10      | 3       |
+| Nature des fonds                                           | 11      | 11      | 1       |
+|                                                            |         |         |         |
+| Indicateur de présence RIB/BAN                             | 12      | 12      | 1       |
+|                                                            |         |         |         |
+| RIB                                                        | 13      | 32      | 20      |
+|                                                            |         |         |         |
+|                                                            |         |         |         |
+|                                                            |         |         |         |
+|                                                            |         |         |         |
+|                                                            |         |         |         |
+| Préfix IBAN                                                | 33      | 36      | 4       |
+|                                                            |         |         |         |
+|                                                            |         |         |         |
+| Non,   prénom ou raison sociale du donneur d’ordre         | 37      | 86      | 50      |
+| Adresse du donneur d’ordre                                 | 87      | 156     | 70      |
+|                                                            |         |         |         |
+| Date de la remise de l’ordre                               | 157     | 164     | 8       |
+|                                                            |         |         |         |
+|                                                            |         |         |         |
+| Référence   de la remise                                   | 165     | 167     | 3       |
+| Nombre   d’opération dans la remise                        | 168     | 173     | 6       |
+| Montant   total                                            | 174     | 189     | 16      |
+| Filler                                                     | 190     | 221     | 31      |
+|                                                            | 221     |         |         |
+|                                                            |         |         |         |
+|                                                            |         |         |         |
+|                                                            |         |         |         |
+| Enregistrement Corps de la   remise (EC) :                 |         |         |         |
+|                                                            |         |         |         |
+| Données                                                    | Pos deb | Pos fin | Lg      |
+|                                                            |         |         |         |
+|                                                            |         |         |         |
+| Numéro d’ordre de l’opération de   virement                | 1       | 10      | 10      |
+|                                                            |         |         |         |
+|                                                            |         |         |         |
+|                                                            |         |         |         |
+| Indicateur de présence RIB/BAN                             | 11      | 11      | 1       |
+|                                                            |         |         |         |
+| RIB                                                        | 12      | 31      | 20      |
+|                                                            |         |         |         |
+| Préfix IBAN                                                | 32      | 35      | 4       |
+|                                                            |         |         |         |
+|                                                            |         |         |         |
+| Non,   prénom ou raison sociale du client    bénéficiaire  | 36      | 85      | 50      |
+| Adresse du client  bénéficiaire                            | 86      | 155     | 70      |
+|                                                            |         |         |         |
+| Montant de l’opération de   virement                       | 156     | 170     | 15      |
+|                                                            |         |         |         |
+| Libellé                                                    | 171     | 240     | 70      |
+|                                                            |         |         |         |
+| Filler                                                     | 241     | 321     | 80      |
+|                                                            | 321     |         |         |
+|                                                            |         |         |         |
+| Enregistrement Fin de la   remise (EF) :                   |         |         |         |
+|                                                            |         |         |         |
+| Données                                                    | Pos deb | Pos fin | Lg      |
+|                                                            |         |         |         |
+|                                                            |         |         |         |
+| Fin de   la remise                                         | 1       | 4       | 4       |
+| Filler                                                     | 5       | 101     | 96      |
+|                                                            | 101     |         |         |
