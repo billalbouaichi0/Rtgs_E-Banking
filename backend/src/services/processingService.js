@@ -154,9 +154,14 @@ class ProcessingService {
         }
 
         if (motifDoublon) {
-          // Rejeter le virement pour doublon et générer le fichier SI_RETOUR
-          const siRetFileName = SiRetourGenerator.getFileName(virData.libelle, virement.id);
-          const siRetContent = SiRetourGenerator.generate(virData);
+          // Rejeter le virement pour doublon et générer le fichier SI_RETOUR normé BDL
+          const siRetFileName = SiRetourGenerator.getFileName(virement);
+          const siRetContent = SiRetourGenerator.generate({
+            ...virData,
+            nomFichier: fileName,
+            referenceRemise: remise.referenceRemise,
+            motif: 'Remise en double detectee'
+          });
           const siRetPath = path.join(FOLDERS.si_retour, siRetFileName);
           fs.writeFileSync(siRetPath, siRetContent, 'utf-8');
 
@@ -385,9 +390,14 @@ class ProcessingService {
     const username = user?.username || user?.fullName || 'Admin BDL';
     const motifFinal = motif || `Refusé manuellement suite à solde insuffisant par ${username}`;
 
-    // 1. Génération du Fichier SI Retour
-    const siRetFileName = SiRetourGenerator.getFileName(virement.libelle, virement.id);
-    const siRetContent = SiRetourGenerator.generate(virement);
+    // 1. Génération du Fichier SI Retour normé BDL
+    const siRetFileName = SiRetourGenerator.getFileName(virement);
+    const siRetContent = SiRetourGenerator.generate({
+      ...virement.toJSON(),
+      nomFichier: virement.remise?.nomFichier || 'VIRMNE_31800215_2605260011.txt',
+      referenceRemise: virement.remise?.referenceRemise || virement.numeroOrdre,
+      motif: 'Solde insuffisant dans SAB (DZD)'
+    });
     const siRetPath = path.join(FOLDERS.si_retour, siRetFileName);
     fs.writeFileSync(siRetPath, siRetContent, 'utf-8');
 
