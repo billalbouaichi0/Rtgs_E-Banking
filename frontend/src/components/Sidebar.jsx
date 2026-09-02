@@ -8,7 +8,8 @@ import {
   Database, 
   FileText,
   ShieldCheck,
-  Eye
+  Eye,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -24,6 +25,10 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
     { id: 'sab', name: 'Comptes SAB (Oracle 11g)', icon: Database },
     { id: 'logs', name: 'Journal d\'Audit & Logs', icon: FileText }
   ];
+
+  if (isAdmin) {
+    navigation.push({ id: 'users', name: 'Gestion Utilisateurs', icon: Users });
+  }
 
   return (
     <aside className="w-64 flex-shrink-0 border-r border-slate-800 bg-slate-950/50 p-4 flex flex-col justify-between hidden md:flex min-h-[calc(100vh-4rem)]">

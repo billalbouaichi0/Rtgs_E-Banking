@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
@@ -10,6 +10,8 @@ import SimulateurEDI from './pages/SimulateurEDI';
 import ReferentielBanques from './pages/ReferentielBanques';
 import SabAccounts from './pages/SabAccounts';
 import AuditLogs from './pages/AuditLogs';
+import UsersManagement from './pages/UsersManagement';
+import ResetPassword from './pages/ResetPassword';
 
 const MainLayout = () => {
   const { user, loading } = useAuth();
@@ -44,6 +46,8 @@ const MainLayout = () => {
         return <SabAccounts />;
       case 'logs':
         return <AuditLogs />;
+      case 'users':
+        return <UsersManagement />;
       default:
         return <Dashboard setActiveTab={setActiveTab} />;
     }
@@ -63,6 +67,14 @@ const MainLayout = () => {
 };
 
 export const App = () => {
+  const pathname = window.location.pathname;
+  const search = window.location.search;
+  const isResetPassword = pathname.includes('/reset-password') || search.includes('token=');
+
+  if (isResetPassword) {
+    return <ResetPassword />;
+  }
+
   return (
     <AuthProvider>
       <MainLayout />
