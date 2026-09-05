@@ -13,6 +13,7 @@ import SabAccounts from './pages/SabAccounts';
 import AuditLogs from './pages/AuditLogs';
 import UsersManagement from './pages/UsersManagement';
 import ResetPassword from './pages/ResetPassword';
+import FolderConfigs from './pages/FolderConfigs';
 
 const MainLayout = () => {
   const { user, loading } = useAuth();
@@ -45,6 +46,8 @@ const MainLayout = () => {
         return <ReferentielBanques />;
       case 'sab':
         return <SabAccounts />;
+      case 'folders':
+        return <FolderConfigs />;
       case 'logs':
         return <AuditLogs />;
       case 'users':

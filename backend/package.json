@@ -9,6 +9,7 @@
     "seed": "node src/seeders/initData.js"
   },
   "dependencies": {
+    "basic-ftp": "^6.2.1",
     "bcryptjs": "^2.4.3",
     "chokidar": "^3.6.0",
     "cors": "^2.8.5",
@@ -22,6 +23,7 @@
     "oracledb": "^7.0.1",
     "pptxgenjs": "^4.0.1",
     "sequelize": "^6.37.3",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "ssh2-sftp-client": "^12.1.1"
   }
 }

@@ -3,12 +3,14 @@ const path = require('path');
 const fs = require('fs');
 const { FOLDERS } = require('../config/folders');
 const processingService = require('./processingService');
+const folderStorageService = require('./folderStorageService');
 const { TraitementLog } = require('../models');
 
 class FileWatcherService {
   constructor() {
     this.watcher = null;
     this.isRunning = false;
+    this.pollInterval = null;
   }
 
   start() {
@@ -17,8 +19,9 @@ class FileWatcherService {
       return;
     }
 
-    console.log(`[Watcher] Surveillance active sur le répertoire : ${FOLDERS.source}`);
+    console.log(`[Watcher] Surveillance active sur le répertoire local : ${FOLDERS.source}`);
 
+    // Surveillance locale chokidar
     this.watcher = chokidar.watch(FOLDERS.source, {
       ignored: /(^|[\/\\])\../, // ignore dotfiles
       persistent: true,
@@ -70,15 +73,30 @@ class FileWatcherService {
       console.error('[Watcher] Erreur du watcher chokidar:', error);
     });
 
+    // Poller périodique distant (FTP/SFTP) toutes les 30 secondes
+    this.pollInterval = setInterval(async () => {
+      try {
+        await folderStorageService.pollRemoteSource(async (filePath, fileName) => {
+          await processingService.processEdiFile(filePath, fileName);
+        });
+      } catch (pollErr) {
+        console.error('[Watcher] Erreur polling distant :', pollErr.message);
+      }
+    }, 30000);
+
     this.isRunning = true;
   }
 
   stop() {
     if (this.watcher) {
       this.watcher.close();
-      this.isRunning = false;
-      console.log('[Watcher] Surveillance arrêtée.');
     }
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+    }
+    this.isRunning = false;
+    console.log('[Watcher] Surveillance arrêtée.');
   }
 
   getStatus() {
@@ -95,3 +113,4 @@ class FileWatcherService {
 }
 
 module.exports = new FileWatcherService();
+

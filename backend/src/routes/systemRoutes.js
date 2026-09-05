@@ -3,8 +3,10 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const fileWatcherService = require('../services/fileWatcherService');
+const folderStorageService = require('../services/folderStorageService');
+const processingService = require('../services/processingService');
 const oracleService = require('../config/oracle');
-const { BanqueRef } = require('../models');
+const { BanqueRef, FolderConfig } = require('../models');
 const { FOLDERS } = require('../config/folders');
 const { verifyToken, requireAdmin } = require('../middlewares/authMiddleware');
 
@@ -23,6 +25,89 @@ router.post('/watcher-toggle', verifyToken, requireAdmin, (req, res) => {
   }
   res.json(fileWatcherService.getStatus());
 });
+
+// === GESTION DES CONFIGURATIONS DE DOSSIERS (LOCAL / FTP / SFTP) ===
+
+// 1. Liste de toutes les configurations de répertoires
+router.get('/folders-config', verifyToken, async (req, res) => {
+  try {
+    const configs = await folderStorageService.getAllConfigs();
+    res.json(configs);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// 2. Mise à jour d'une configuration de répertoire
+router.put('/folders-config/:folderKey', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const { folderKey } = req.params;
+    const {
+      label,
+      description,
+      type,
+      localPath,
+      host,
+      port,
+      username,
+      password,
+      remotePath,
+      secureTls,
+      isActive
+    } = req.body;
+
+    const updated = await folderStorageService.updateConfig(folderKey, {
+      label,
+      description,
+      type,
+      localPath,
+      host,
+      port: port ? Number(port) : (type === 'SFTP' ? 22 : 21),
+      username,
+      ...(password !== undefined && password !== '' ? { password } : {}),
+      remotePath,
+      secureTls: Boolean(secureTls),
+      isActive: isActive !== undefined ? Boolean(isActive) : true
+    });
+
+    res.json({
+      message: `Configuration du dossier [${folderKey}] mise à jour avec succès.`,
+      config: updated
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// 3. Test direct de connexion (LOCAL, FTP ou SFTP)
+router.post('/folders-config/test', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const configData = req.body;
+    const result = await folderStorageService.testConnection(configData);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: `Échec du test de connexion : ${err.message}`
+    });
+  }
+});
+
+// 4. Synchronisation manuelle du dossier source distant (FTP / SFTP)
+router.post('/folders-config/sync-source', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const result = await folderStorageService.pollRemoteSource(async (filePath, fileName) => {
+      await processingService.processEdiFile(filePath, fileName);
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({
+      polled: 0,
+      message: `Erreur lors de la synchronisation source : ${err.message}`
+    });
+  }
+});
+
 
 // Liste des comptes SAB et mode de vérification actif
 router.get('/oracle-accounts', verifyToken, (req, res) => {

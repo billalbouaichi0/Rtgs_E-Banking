@@ -1,5 +1,5 @@
-const { sequelize, User, BanqueRef } = require('../models');
-const { ensureDirectoriesExist } = require('../config/folders');
+const { sequelize, User, BanqueRef, FolderConfig } = require('../models');
+const { ensureDirectoriesExist, FOLDERS } = require('../config/folders');
 require('dotenv').config();
 
 const BANQUES_ALGERIE = [
@@ -20,6 +20,65 @@ const BANQUES_ALGERIE = [
   { codeBanque: '015', nomBanque: 'HOUSING BANK FOR TRADING & FINANCE', bicSwift: 'HBTHDZALXXX', compteReglement: '9711000015' },
   { codeBanque: '016', nomBanque: 'AL SALAM BANK ALGERIA', bicSwift: 'SALMDZALXXX', compteReglement: '9711000016' },
   { codeBanque: '017', nomBanque: 'FRANSABANK EL DJAZAIR', bicSwift: 'FSBKDZALXXX', compteReglement: '9711000017' }
+];
+
+const DEFAULT_FOLDERS_CONFIG = [
+  {
+    folderKey: 'source',
+    label: 'Dossier Source (EDI Entrants)',
+    description: 'Répertoire d acquisition et surveillance des fichiers remises EDI déposés',
+    type: 'LOCAL',
+    localPath: FOLDERS.source,
+    host: '10.121.2.60',
+    port: 21,
+    username: 'ftp_edi',
+    password: '',
+    remotePath: '/edi/incoming',
+    secureTls: false,
+    isActive: true
+  },
+  {
+    folderKey: 'generated_od',
+    label: 'Dossier Fichiers OD (Débits)',
+    description: 'Répertoire de stockage et transmission des Ordres de Débit générés',
+    type: 'LOCAL',
+    localPath: FOLDERS.generated_od,
+    host: '10.121.2.60',
+    port: 21,
+    username: 'ftp_od',
+    password: '',
+    remotePath: '/accounting/od',
+    secureTls: false,
+    isActive: true
+  },
+  {
+    folderKey: 'si_retour',
+    label: 'Dossier SI Retour (Rejets)',
+    description: 'Répertoire de dépôt des fichiers SI Retour pour les rejets et anomalies',
+    type: 'LOCAL',
+    localPath: FOLDERS.si_retour,
+    host: '10.121.2.60',
+    port: 21,
+    username: 'ftp_retour',
+    password: '',
+    remotePath: '/si/retour',
+    secureTls: false,
+    isActive: true
+  },
+  {
+    folderKey: 'generated_mt103',
+    label: 'Dossier SWIFT MT103',
+    description: 'Répertoire de génération et acheminement des messages RTGS SWIFT MT103',
+    type: 'LOCAL',
+    localPath: FOLDERS.generated_mt103,
+    host: '10.121.2.60',
+    port: 22,
+    username: 'sftp_swift',
+    password: '',
+    remotePath: '/swift/outbound',
+    secureTls: false,
+    isActive: true
+  }
 ];
 
 const seedDatabase = async () => {
@@ -79,6 +138,15 @@ const seedDatabase = async () => {
     }
     console.log(`[Seed] ${BANQUES_ALGERIE.length} banques algériennes initialisées.`);
 
+    // 3. Initialisation des configurations de dossiers multi-protocoles
+    for (const folder of DEFAULT_FOLDERS_CONFIG) {
+      const existing = await FolderConfig.findByPk(folder.folderKey);
+      if (!existing) {
+        await FolderConfig.create(folder);
+      }
+    }
+    console.log('[Seed] Configurations des dossiers (Source, OD, SI Retour, MT103) initialisées.');
+
     console.log('[Seed] Initialisation complète terminée avec succès !');
   } catch (err) {
     console.error('[Seed] Erreur lors de l initialisation :', err);
@@ -90,3 +158,4 @@ if (require.main === module) {
 }
 
 module.exports = seedDatabase;
+

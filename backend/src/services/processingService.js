@@ -6,6 +6,7 @@ const EdiParser = require('../parsers/ediParser');
 const Mt103Generator = require('../generators/mt103Generator');
 const OdGenerator = require('../generators/odGenerator');
 const SiRetourGenerator = require('../generators/siRetourGenerator');
+const folderStorageService = require('./folderStorageService');
 const { Op } = require('sequelize');
 const { Remise, Virement, BanqueRef, TraitementLog } = require('../models');
 
@@ -162,8 +163,7 @@ class ProcessingService {
             referenceRemise: remise.referenceRemise,
             motif: 'Remise en double detectee'
           });
-          const siRetPath = path.join(FOLDERS.si_retour, siRetFileName);
-          fs.writeFileSync(siRetPath, siRetContent, 'utf-8');
+          await folderStorageService.writeOutputFile('si_retour', siRetFileName, siRetContent);
 
           await virement.update({
             statut: 'REJETE_DOUBLON',
@@ -212,14 +212,12 @@ class ProcessingService {
           // Génération MT103
           const mt103Content = Mt103Generator.generate(virData, banqueBenif);
           const mt103FileName = `MT103_${virement.id}_${virData.numeroOrdre}.txt`;
-          const mt103Path = path.join(FOLDERS.generated_mt103, mt103FileName);
-          fs.writeFileSync(mt103Path, mt103Content, 'utf-8');
+          await folderStorageService.writeOutputFile('generated_mt103', mt103FileName, mt103Content);
 
           // Génération OD
           const odContent = OdGenerator.generate(virData);
           const odFileName = `OD_${virement.id}_${virData.numeroOrdre}.txt`;
-          const odPath = path.join(FOLDERS.generated_od, odFileName);
-          fs.writeFileSync(odPath, odContent, 'utf-8');
+          await folderStorageService.writeOutputFile('generated_od', odFileName, odContent);
 
           await virement.update({
             statut: 'VALIDE_TRAITE',
@@ -329,14 +327,12 @@ class ProcessingService {
     // 2. Génération du MT103
     const mt103Content = Mt103Generator.generate(virement, banqueBenif);
     const mt103FileName = `MT103_${virement.id}_${virement.numeroOrdre}.txt`;
-    const mt103Path = path.join(FOLDERS.generated_mt103, mt103FileName);
-    fs.writeFileSync(mt103Path, mt103Content, 'utf-8');
+    await folderStorageService.writeOutputFile('generated_mt103', mt103FileName, mt103Content);
 
     // 3. Génération du Fichier OD
     const odContent = OdGenerator.generate(virement);
     const odFileName = `OD_${virement.id}_${virement.numeroOrdre}.txt`;
-    const odPath = path.join(FOLDERS.generated_od, odFileName);
-    fs.writeFileSync(odPath, odContent, 'utf-8');
+    await folderStorageService.writeOutputFile('generated_od', odFileName, odContent);
 
     // 4. Mise à jour du virement
     await virement.update({
@@ -398,8 +394,7 @@ class ProcessingService {
       referenceRemise: virement.remise?.referenceRemise || virement.numeroOrdre,
       motif: 'Solde insuffisant dans SAB (DZD)'
     });
-    const siRetPath = path.join(FOLDERS.si_retour, siRetFileName);
-    fs.writeFileSync(siRetPath, siRetContent, 'utf-8');
+    await folderStorageService.writeOutputFile('si_retour', siRetFileName, siRetContent);
 
     // 2. Mise à jour du virement
     await virement.update({

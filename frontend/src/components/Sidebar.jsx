@@ -9,7 +9,8 @@ import {
   FileText,
   ShieldCheck,
   Eye,
-  Users
+  Users,
+  FolderTree
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -27,8 +28,10 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
   ];
 
   if (isAdmin) {
+    navigation.push({ id: 'folders', name: 'Dossiers & Protocoles', icon: FolderTree });
     navigation.push({ id: 'users', name: 'Gestion Utilisateurs', icon: Users });
   }
+
 
   return (
     <aside className="w-64 flex-shrink-0 border-r border-slate-200/80 dark:border-slate-800/80 bg-slate-50/90 dark:bg-[#070a12]/60 p-4 flex flex-col justify-between hidden md:flex min-h-[calc(100vh-4rem)] transition-colors duration-200">

@@ -4,6 +4,7 @@ const BanqueRef = require('./BanqueRef');
 const Remise = require('./Remise');
 const Virement = require('./Virement');
 const TraitementLog = require('./TraitementLog');
+const FolderConfig = require('./FolderConfig');
 
 // Relations
 Remise.hasMany(Virement, { foreignKey: 'remiseId', as: 'virements', onDelete: 'CASCADE' });
@@ -18,5 +19,6 @@ module.exports = {
   BanqueRef,
   Remise,
   Virement,
-  TraitementLog
+  TraitementLog,
+  FolderConfig
 };
