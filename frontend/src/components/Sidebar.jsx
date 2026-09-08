@@ -1,6 +1,6 @@
-import React from 'react';
 import { 
   LayoutDashboard, 
+  Clock,
   ArrowLeftRight, 
   UploadCloud, 
   PlayCircle, 
@@ -19,6 +19,7 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
 
   const navigation = [
     { id: 'dashboard', name: 'Tableau de Bord', icon: LayoutDashboard },
+    { id: 'scheduler', name: 'Planificateur Lots OD', icon: Clock },
     { id: 'virements', name: 'Virements & Remises', icon: ArrowLeftRight },
     { id: 'upload', name: 'Traitement Manuel EDI', icon: UploadCloud },
     { id: 'simulateur', name: 'Simulateur de Flux', icon: PlayCircle },

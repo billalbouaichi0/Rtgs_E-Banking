@@ -12,7 +12,7 @@ const MOCK_SAB_DATABASE = [
     comptecom: '001334002181531',
     soldecom: '001334002181531',
     comptedev: 'DZD',
-    soldecen: 50000000 // 500 000.00 DZD -> Solde insuffisant
+    soldecen: 50000000 // 500 000.00 DZD -> Solde insuffisant (< 15M)
   },
   {
     comptecom: '001334002181532',
@@ -28,12 +28,16 @@ const MOCK_SAB_DATABASE = [
   }
 ];
 
+// Table de simulation en mémoire de sabstd.zcptod0 pour le suivi de comptabilisation des OD
+const MOCK_ZCPTOD0_TABLE = [];
+
 class OracleService {
   constructor() {
     this.mode = (process.env.SOLDE_VERIFICATION_MODE || 'SIMULATION').toUpperCase();
     this.isSimulatorMode = this.mode !== 'ORACLE_PROD';
     this.connection = null;
     this.mockAccounts = [...MOCK_SAB_DATABASE];
+    this.mockZcptod0 = MOCK_ZCPTOD0_TABLE;
   }
 
   getModeInfo() {
@@ -46,17 +50,15 @@ class OracleService {
   }
 
   async connect() {
-    // Mode Simulation explicite
     if (this.isSimulatorMode) {
       console.log('=======================================================');
-      console.log('  [SOLDE] Mode : SIMULATION (Table SAB en mémoire)');
+      console.log('  [SAB ORACLE] Mode : SIMULATION (Tables SAB en mémoire)');
       console.log('=======================================================');
       return true;
     }
 
-    // Mode Production avec Oracle 11g
     console.log('=======================================================');
-    console.log('  [SOLDE] Mode : ORACLE_PROD (Connexion Oracle 11g SAB)');
+    console.log('  [SAB ORACLE] Mode : ORACLE_PROD (Connexion Oracle 11g SAB)');
     console.log(`  Connexion : ${process.env.ORACLE_USER}@${process.env.ORACLE_CONNECT_STRING}`);
     console.log('=======================================================');
 
@@ -88,18 +90,11 @@ class OracleService {
   }
 
   /**
-   * Exécute la requête demandée :
-   * select s.soldecen, c.comptecom
-   * from sabstd.zcompte0 c
-   * left join sabstd.zsolde0 s on trim(comptecom)=trim(soldecom)
-   * where comptedev='DZD' and length(trim(comptecom))=15
-   * and trim(comptecom) = 'Compte_donneur_ordre'
-   * group by comptecom, soldecen
+   * Vérification du solde SAB du compte donneur d'ordre
    */
   async checkAccountBalance(compteDonneurOrdre) {
     const cleanCompte = (compteDonneurOrdre || '').trim();
 
-    // 1. Vérification en mode SIMULATION
     if (this.isSimulatorMode) {
       const account = this.mockAccounts.find(
         (a) => a.comptecom === cleanCompte && a.comptedev === 'DZD'
@@ -134,7 +129,6 @@ class OracleService {
       };
     }
 
-    // 2. Vérification en mode ORACLE_PROD
     try {
       const oracledb = require('oracledb');
       if (!this.connection) {
@@ -182,6 +176,181 @@ class OracleService {
     }
   }
 
+  /**
+   * Enregistre un OD dans le mock SAB lors de la génération du lot
+   */
+  registerMockOd(virement, cleUnicite) {
+    const existing = this.mockZcptod0.find(o => o.cleUnicite === cleUnicite);
+    const montantCentimes = Math.round((Number(virement.montant) || 0) * 100);
+    
+    if (!existing) {
+      this.mockZcptod0.push({
+        CPTODDCO: 0,
+        CPTODETA: '001', // Intégré par défaut
+        CPTODCOM: virement.compteDonneur15,
+        CPTODMO1: String(montantCentimes),
+        CPTODMO4: String(virement.montant),
+        CPTODOPE: '*A9',
+        CPTODEVE: 'RTG',
+        CPTODLI2: cleUnicite,
+        cleUnicite,
+        virementId: virement.id,
+        createdAt: new Date(),
+        // Simulation de comptabilisation automatique après 1 cycle
+        comptabiliseAt: Date.now() + 10000 
+      });
+    }
+  }
+
+  /**
+   * Vérifie le statut d'un OD dans sabstd.zcptod0 selon la requête fournie :
+   * 
+   * SELECT CPTODDCO, CPTODETA, CPTODCOM, CPTODMO1, CPTODMO4 
+   * FROM sabstd.zcptod0 
+   * WHERE CPTODOPE = '*A9' 
+   *   AND CPTODEVE = 'RTG' 
+   *   AND CPTODCOM LIKE '%compte donneur%' 
+   *   AND CPTODMO1 = 'montantvirment' 
+   *   AND CPTODLI2 LIKE '%comptedonneur||dateremise||numeroremise%';
+   * 
+   * Règles de décision :
+   * - CPTODDCO <> 0 ET CPTODETA = '003' -> COMPTABILISE (ENVOYE + MT103 + SI_VIR_CPT)
+   * - CPTODDCO = 0 ET CPTODETA = '001'  -> INTEGRE (en attente comptabilisation)
+   * - CPTODDCO = 0 ET CPTODETA = '002'  -> REJETE (rejeté par SAB)
+   * - Non trouvé                        -> EN_ATTENTE_INTEGRATION
+   */
+  async checkOdComptabilisation(virement, cleUnicite) {
+    const compteDonneur = (virement.compteDonneur15 || '').trim();
+    const montantCentimes = String(Math.round((Number(virement.montant) || 0) * 100));
+    const searchKey = cleUnicite || `${compteDonneur}||${virement.remise?.dateRemiseOrdre || ''}||${virement.remise?.referenceRemise || virement.numeroOrdre || ''}`;
+
+    // 1. Mode SIMULATION
+    if (this.isSimulatorMode) {
+      let odRecord = this.mockZcptod0.find(
+        (o) => o.cleUnicite === searchKey || (o.CPTODCOM === compteDonneur && o.CPTODMO1 === montantCentimes)
+      );
+
+      if (!odRecord) {
+        // Enregistrer automatiquement comme intégré si non encore présent
+        this.registerMockOd(virement, searchKey);
+        odRecord = this.mockZcptod0.find((o) => o.cleUnicite === searchKey);
+      }
+
+      // Si le délai simulé est dépassé, passer en comptabilisé
+      if (odRecord && Date.now() >= odRecord.comptabiliseAt && odRecord.CPTODETA === '001') {
+        odRecord.CPTODETA = '003';
+        odRecord.CPTODDCO = Math.floor(Math.random() * 900000) + 100000; // Numéro comptable SAB généré
+      }
+
+      const cptoddco = Number(odRecord?.CPTODDCO || 0);
+      const cptodeta = odRecord?.CPTODETA || '001';
+
+      if (cptoddco !== 0 && cptodeta === '003') {
+        return {
+          status: 'COMPTABILISE',
+          cptoddco,
+          cptodeta,
+          message: `Opération OD comptabilisée avec succès dans SAB (DCO #${cptoddco})`,
+          raw: odRecord
+        };
+      } else if (cptoddco === 0 && cptodeta === '001') {
+        return {
+          status: 'INTEGRE',
+          cptoddco: 0,
+          cptodeta: '001',
+          message: `Opération OD intégrée dans SAB, en attente de validation comptable.`,
+          raw: odRecord
+        };
+      } else if (cptodeta === '002') {
+        return {
+          status: 'REJETE',
+          cptoddco: 0,
+          cptodeta: '002',
+          message: `Opération OD rejetée par le SAB.`,
+          raw: odRecord
+        };
+      }
+
+      return {
+        status: 'EN_ATTENTE_INTEGRATION',
+        cptoddco,
+        cptodeta,
+        message: `Opération en cours de transmission SAB.`,
+        raw: odRecord
+      };
+    }
+
+    // 2. Mode ORACLE_PROD
+    try {
+      const oracledb = require('oracledb');
+      if (!this.connection) {
+        await this.connect();
+      }
+
+      const sql = `
+        SELECT CPTODDCO, CPTODETA, CPTODCOM, CPTODMO1, CPTODMO4, CPTODLI2
+        FROM sabstd.zcptod0
+        WHERE CPTODOPE = '*A9'
+          AND CPTODEVE = 'RTG'
+          AND CPTODCOM LIKE :compteParam
+          AND CPTODMO1 = :montantParam
+          AND CPTODLI2 LIKE :cleParam
+      `;
+
+      const result = await this.connection.execute(
+        sql,
+        {
+          compteParam: `%${compteDonneur}%`,
+          montantParam: montantCentimes,
+          cleParam: `%${searchKey}%`
+        },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      if (result.rows && result.rows.length > 0) {
+        const row = result.rows[0];
+        const cptoddco = Number(row.CPTODDCO || row.cptoddco || 0);
+        const cptodeta = String(row.CPTODETA || row.cptodeta || '').trim();
+
+        if (cptoddco !== 0 && cptodeta === '003') {
+          return {
+            status: 'COMPTABILISE',
+            cptoddco,
+            cptodeta,
+            message: `Opération OD comptabilisée dans Oracle SAB (DCO: ${cptoddco})`,
+            raw: row
+          };
+        } else if (cptoddco === 0 && cptodeta === '001') {
+          return {
+            status: 'INTEGRE',
+            cptoddco: 0,
+            cptodeta: '001',
+            message: `Opération OD intégrée dans SAB, en attente de comptabilisation.`,
+            raw: row
+          };
+        } else if (cptoddco === 0 && cptodeta === '002') {
+          return {
+            status: 'REJETE',
+            cptoddco: 0,
+            cptodeta: '002',
+            message: `Opération OD rejetée par SAB (Code 002).`,
+            raw: row
+          };
+        }
+      }
+
+      return {
+        status: 'EN_ATTENTE_INTEGRATION',
+        cptoddco: 0,
+        cptodeta: 'NON_TROUVE',
+        message: 'Opération non encore trouvée dans sabstd.zcptod0.'
+      };
+    } catch (err) {
+      console.error('[Oracle 11g] Erreur vérification zcptod0 :', err);
+      throw err;
+    }
+  }
+
   addOrUpdateMockAccount(comptecom, soldeDinar) {
     const existing = this.mockAccounts.find((a) => a.comptecom === comptecom);
     const soldecen = Math.round(soldeDinar * 100);
@@ -199,6 +368,10 @@ class OracleService {
 
   getMockAccounts() {
     return this.mockAccounts;
+  }
+
+  getMockZcptod0() {
+    return this.mockZcptod0;
   }
 }
 

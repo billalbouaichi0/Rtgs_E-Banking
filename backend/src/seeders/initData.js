@@ -1,4 +1,4 @@
-const { sequelize, User, BanqueRef, FolderConfig } = require('../models');
+const { sequelize, User, BanqueRef, FolderConfig, SystemSetting } = require('../models');
 const { ensureDirectoriesExist, FOLDERS } = require('../config/folders');
 require('dotenv').config();
 
@@ -53,8 +53,8 @@ const DEFAULT_FOLDERS_CONFIG = [
   },
   {
     folderKey: 'si_retour',
-    label: 'Dossier SI Retour (Rejets)',
-    description: 'Répertoire de dépôt des fichiers SI Retour pour les rejets et anomalies',
+    label: 'Dossier SI Retour (Rejets & Confirmations)',
+    description: 'Répertoire de dépôt des fichiers SI Retour (SI_VIR_RJT et SI_VIR_CPT)',
     type: 'LOCAL',
     localPath: FOLDERS.si_retour,
     host: '10.121.2.60',
@@ -92,14 +92,19 @@ const seedDatabase = async () => {
         await sequelize.query(`
           ALTER TABLE \`virements\` 
           MODIFY COLUMN \`statut\` ENUM(
+            'RECU',
+            'OD_GEN',
+            'INTEGRE',
+            'ENVOYE',
+            'REJETE',
+            'IGNORE_FILTRE',
             'VALIDE_TRAITE',
             'REJETE_SOLDE',
             'REJETE_DOUBLON',
-            'IGNORE_FILTRE',
             'EN_ATTENTE',
             'ATTENTE_VALIDATION_SOLDE',
             'ERREUR'
-          ) DEFAULT 'EN_ATTENTE';
+          ) DEFAULT 'RECU';
         `);
       } catch (e) {
         // Table non créée ou déjà à jour
@@ -147,6 +152,32 @@ const seedDatabase = async () => {
     }
     console.log('[Seed] Configurations des dossiers (Source, OD, SI Retour, MT103) initialisées.');
 
+    // 4. Initialisation des paramètres du planificateur
+    await SystemSetting.findOrCreate({
+      where: { key: 'od_batch_hours' },
+      defaults: {
+        value: JSON.stringify(['12:00', '15:00', '16:30']),
+        description: 'Heures programmées de génération du lot OD'
+      }
+    });
+
+    await SystemSetting.findOrCreate({
+      where: { key: 'sab_poll_interval_minutes' },
+      defaults: {
+        value: '5',
+        description: 'Fréquence en minutes du polling de comptabilisation SAB zcptod0'
+      }
+    });
+
+    await SystemSetting.findOrCreate({
+      where: { key: 'scheduler_auto_enabled' },
+      defaults: {
+        value: 'true',
+        description: 'Activer/Désactiver le planificateur automatique OD & SAB'
+      }
+    });
+
+    console.log('[Seed] Paramètres planificateur OD initialisés (12:00, 15:00, 16:30 - Check SAB 5 min).');
     console.log('[Seed] Initialisation complète terminée avec succès !');
   } catch (err) {
     console.error('[Seed] Erreur lors de l initialisation :', err);
@@ -158,4 +189,3 @@ if (require.main === module) {
 }
 
 module.exports = seedDatabase;
-

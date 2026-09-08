@@ -7,6 +7,7 @@ const { sequelize } = require('./models');
 const { ensureDirectoriesExist } = require('./config/folders');
 const seedDatabase = require('./seeders/initData');
 const fileWatcherService = require('./services/fileWatcherService');
+const odSchedulerService = require('./services/odSchedulerService');
 const oracleService = require('./config/oracle');
 
 // Routes
@@ -54,6 +55,10 @@ const startServer = async () => {
 
     // Démarrage du Watcher de surveillance de répertoire
     fileWatcherService.start();
+
+    // Démarrage du Planificateur de lots OD et de vérification SAB
+    await odSchedulerService.start();
+
 
     app.listen(PORT, () => {
       console.log(`=======================================================`);

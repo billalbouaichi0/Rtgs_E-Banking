@@ -5,6 +5,7 @@ const oracleService = require('../config/oracle');
 const EdiParser = require('../parsers/ediParser');
 const Mt103Generator = require('../generators/mt103Generator');
 const OdGenerator = require('../generators/odGenerator');
+const OdBatchGenerator = require('../generators/odBatchGenerator');
 const SiRetourGenerator = require('../generators/siRetourGenerator');
 const folderStorageService = require('./folderStorageService');
 const { Op } = require('sequelize');
@@ -188,97 +189,45 @@ class ProcessingService {
         if (normLibelle) seenLibelles.add(normLibelle);
         if (normNomBenef) seenNomsBenef.add(normNomBenef);
 
-        // 4. Vérification du solde via Oracle 11g SAB
-        let oracleRes;
-        try {
-          oracleRes = await oracleService.checkAccountBalance(virData.compteDonneur15);
-        } catch (oracleErr) {
-          console.error(`[Oracle 11g] Erreur pour compte ${virData.compteDonneur15}`, oracleErr);
-          oracleRes = { found: false, soldeDinar: 0 };
-        }
-
-        const soldeDinar = oracleRes.soldeDinar || 0;
-        const hasSufficientBalance = oracleRes.found && soldeDinar >= virData.montant;
+        // 4. Attribution du statut initial : RECU (En attente du créneau de génération OD)
+        const cleUnicite = OdBatchGenerator.getCleUnicite(virData, remise);
 
         await virement.update({
-          soldeCompteTrouve: soldeDinar,
-          oracleVerifie: true
+          statut: 'RECU',
+          cleUniciteSab: cleUnicite
         });
 
-        if (hasSufficientBalance) {
-          // Solde suffisant -> Générer Fichier OD et Fichier MT103 automatiquement
-          const banqueBenif = await BanqueRef.findByPk(virData.codeBanqueBeneficiaire);
+        await TraitementLog.create({
+          type: 'INGESTION_RECU',
+          niveau: 'INFO',
+          message: `Virement N° ${virData.numeroOrdre} vérifié et accepté. Statut : RECU (en attente du créneau de génération du lot OD). Clé SAB : ${cleUnicite}`,
+          nomFichier: fileName,
+          virementId: virement.id,
+          details: { cleUnicite, montant: virData.montant, compteDonneur: virData.compteDonneur15 }
+        });
 
-          // Génération MT103
-          const mt103Content = Mt103Generator.generate(virData, banqueBenif);
-          const mt103FileName = `MT103_${virement.id}_${virData.numeroOrdre}.txt`;
-          await folderStorageService.writeOutputFile('generated_mt103', mt103FileName, mt103Content);
-
-          // Génération OD
-          const odContent = OdGenerator.generate(virData);
-          const odFileName = `OD_${virement.id}_${virData.numeroOrdre}.txt`;
-          await folderStorageService.writeOutputFile('generated_od', odFileName, odContent);
-
-          await virement.update({
-            statut: 'VALIDE_TRAITE',
-            fichierMt103Genere: mt103FileName,
-            fichierOdGenere: odFileName
-          });
-
-          await TraitementLog.create({
-            type: 'GENERATION_MT103',
-            niveau: 'SUCCESS',
-            message: `Virement ${virData.numeroOrdre} validé automatiquement. MT103 généré (${mt103FileName}) et Fichier OD généré (${odFileName}). Solde SAB : ${soldeDinar.toLocaleString()} DZD`,
-            nomFichier: fileName,
-            virementId: virement.id,
-            details: { mt103FileName, odFileName, soldeDinar }
-          });
-
-          countValides++;
-        } else {
-          // Solde insuffisant -> Notification & Mise en attente de décision (Valider / Refuser)
-          const motifAlerte = oracleRes.found
-            ? `Solde insuffisant (${soldeDinar.toLocaleString()} DZD < ${virData.montant.toLocaleString()} DZD)`
-            : `Compte donneur d'ordre (${virData.compteDonneur15}) introuvable dans SAB (DZD)`;
-
-          await virement.update({
-            statut: 'ATTENTE_VALIDATION_SOLDE',
-            motifRejetOuIgnorer: `${motifAlerte} - En attente de validation ou refus manuel.`
-          });
-
-          await TraitementLog.create({
-            type: 'ALERTE_SOLDE',
-            niveau: 'WARNING',
-            message: `[ALERTE SOLDE] Virement N° ${virData.numeroOrdre} : ${motifAlerte}. Veuillez valider (forçage) ou refuser l'opération.`,
-            nomFichier: fileName,
-            virementId: virement.id,
-            details: { soldeDinar, montantRequis: virData.montant, compteDonneur: virData.compteDonneur15 }
-          });
-
-          countAttenteValidation++;
-        }
+        countValides++;
       }
 
       // Mise à jour du statut global de la remise
-      let globalStatut = 'TRAITE_COMPLET';
+      let globalStatut = 'RECU';
       if (allIgnored) {
         globalStatut = 'IGNORE';
-        // Déplacement du fichier de input vers input/ignorer
         const destIgnorerPath = path.join(FOLDERS.ignorer, fileName);
         try {
           if (fs.existsSync(filePath)) {
             fs.copyFileSync(filePath, destIgnorerPath);
             fs.unlinkSync(filePath);
-            console.log(`[ProcessingService] Fichier déplacé vers ${destIgnorerPath}`);
           }
         } catch (e) {
           console.error('[ProcessingService] Erreur déplacement vers ignorer', e);
         }
-      } else if (countAttenteValidation > 0) {
-        globalStatut = 'ATTENTE_VALIDATION';
       } else if (countRejetes > 0 && countValides > 0) {
-        globalStatut = 'TRAITE_PARTIEL';
+        globalStatut = 'PARTIEL';
+      } else if (countValides > 0) {
+        globalStatut = 'EN_ATTENTE_OD';
       }
+
 
       await remise.update({ statut: globalStatut });
 

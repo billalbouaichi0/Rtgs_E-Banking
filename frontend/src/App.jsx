@@ -11,9 +11,9 @@ import SimulateurEDI from './pages/SimulateurEDI';
 import ReferentielBanques from './pages/ReferentielBanques';
 import SabAccounts from './pages/SabAccounts';
 import AuditLogs from './pages/AuditLogs';
-import UsersManagement from './pages/UsersManagement';
 import ResetPassword from './pages/ResetPassword';
 import FolderConfigs from './pages/FolderConfigs';
+import OdScheduler from './pages/OdScheduler';
 
 const MainLayout = () => {
   const { user, loading } = useAuth();
@@ -36,6 +36,8 @@ const MainLayout = () => {
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard setActiveTab={setActiveTab} />;
+      case 'scheduler':
+        return <OdScheduler />;
       case 'virements':
         return <VirementsList />;
       case 'upload':

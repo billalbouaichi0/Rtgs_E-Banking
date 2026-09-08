@@ -167,11 +167,14 @@ router.get('/:id/file/:fileType', verifyToken, async (req, res) => {
     if (fileType === 'mt103') {
       fileName = virement.fichierMt103Genere;
       folder = FOLDERS.generated_mt103;
-    } else if (fileType === 'od') {
-      fileName = virement.fichierOdGenere;
+    } else if (fileType === 'od' || fileType === 'od_batch') {
+      fileName = virement.fichierOdBatch || virement.fichierOdGenere;
       folder = FOLDERS.generated_od;
     } else if (fileType === 'si_ret') {
       fileName = virement.fichierSiRetGenere;
+      folder = FOLDERS.si_retour;
+    } else if (fileType === 'si_cpt') {
+      fileName = virement.fichierSiCptGenere;
       folder = FOLDERS.si_retour;
     }
 

@@ -152,12 +152,14 @@ export const VirementsList = () => {
               className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700/80 text-slate-200 text-xs focus:outline-none focus:border-[#772281]"
             >
               <option value="ALL">Tous les Statuts</option>
-              <option value="ATTENTE_VALIDATION_SOLDE">🚨 Solde Insuffisant (Action Requise)</option>
-              <option value="VALIDE_TRAITE">Traités & Validés (OD + MT103)</option>
-              <option value="REJETE_DOUBLON">🚫 Rejetés pour Doublon (SI Retour)</option>
-              <option value="REJETE_SOLDE">Refusés / Rejetés Solde (SI Retour)</option>
-              <option value="IGNORE_FILTRE">Ignorés (Filtre RTGS)</option>
-              <option value="EN_ATTENTE">En Attente</option>
+              <option value="RECU">⏳ 1. Reçu (En attente Lot OD)</option>
+              <option value="OD_GEN">📦 2. Lot OD Généré (En attente SAB)</option>
+              <option value="INTEGRE">🔄 3. Intégré SAB (001)</option>
+              <option value="ENVOYE">✅ 4. Comptabilisé & Envoyé (MT103 + SI_CPT)</option>
+              <option value="REJETE">❌ Rejeté (SI Retour généré)</option>
+              <option value="IGNORE_FILTRE">⚪ Ignoré (Non éligible RTGS)</option>
+              <option value="ATTENTE_VALIDATION_SOLDE">⚠️ En attente décision solde</option>
+              <option value="VALIDE_TRAITE">Traité classique (OD + MT103)</option>
             </select>
           </div>
 

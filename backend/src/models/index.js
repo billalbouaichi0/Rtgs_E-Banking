@@ -5,6 +5,7 @@ const Remise = require('./Remise');
 const Virement = require('./Virement');
 const TraitementLog = require('./TraitementLog');
 const FolderConfig = require('./FolderConfig');
+const SystemSetting = require('./SystemSetting');
 
 // Relations
 Remise.hasMany(Virement, { foreignKey: 'remiseId', as: 'virements', onDelete: 'CASCADE' });
@@ -20,5 +21,7 @@ module.exports = {
   Remise,
   Virement,
   TraitementLog,
-  FolderConfig
+  FolderConfig,
+  SystemSetting
 };
+

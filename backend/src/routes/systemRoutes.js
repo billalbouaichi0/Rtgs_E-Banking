@@ -108,6 +108,60 @@ router.post('/folders-config/sync-source', verifyToken, requireAdmin, async (req
   }
 });
 
+// === GESTION DU PLANIFICATEUR DE LOTS OD & SURVEILLANCE SAB ===
+
+// Obtenir la configuration et le statut du planificateur OD
+router.get('/od-schedule', verifyToken, (req, res) => {
+  const odSchedulerService = require('../services/odSchedulerService');
+  res.json(odSchedulerService.getSettings());
+});
+
+// Mettre à jour les horaires (ex: 12:00, 15:00, 16:30) et la fréquence de check SAB
+router.put('/od-schedule', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const odSchedulerService = require('../services/odSchedulerService');
+    const updated = await odSchedulerService.saveSettings(req.body);
+    res.json({
+      message: 'Paramètres du planificateur OD et surveillance SAB enregistrés avec succès.',
+      settings: updated
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Déclenchement manuel immédiat de la génération du lot OD
+router.post('/od-schedule/run-batch', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const odSchedulerService = require('../services/odSchedulerService');
+    const result = await odSchedulerService.executerGenerationLotOd({ trigger: 'MANUAL', user: req.user });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: `Erreur lors du traitement du lot OD : ${err.message}` });
+  }
+});
+
+// Déclenchement manuel immédiat de la vérification de comptabilisation SAB
+router.post('/od-schedule/check-sab', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const odSchedulerService = require('../services/odSchedulerService');
+    const result = await odSchedulerService.verifierComptabilisationSab();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: `Erreur lors du check SAB : ${err.message}` });
+  }
+});
+
+// Consultation des enregistrements simulés zcptod0 (pour mode simulateur)
+router.get('/od-schedule/sab-table', verifyToken, (req, res) => {
+  res.json({
+    mode: oracleService.mode,
+    isSimulatorMode: oracleService.isSimulatorMode,
+    zcptod0: oracleService.getMockZcptod0()
+  });
+});
+
+
 
 // Liste des comptes SAB et mode de vérification actif
 router.get('/oracle-accounts', verifyToken, (req, res) => {

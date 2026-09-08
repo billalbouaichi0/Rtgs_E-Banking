@@ -14,7 +14,10 @@ import {
   ExternalLink,
   AlertOctagon,
   Check,
-  Copy
+  Copy,
+  Layers,
+  Send,
+  Calendar
 } from 'lucide-react';
 import api from '../services/api';
 import StatusBadge from './StatusBadge';
@@ -48,34 +51,6 @@ export const VirementDetailModal = ({ isOpen, onClose, virementId }) => {
     }
   }, [isOpen, virementId]);
 
-  const handleValider = async () => {
-    setActionLoading(true);
-    setActionError(null);
-    try {
-      await api.post(`/virements/${virementId}/valider`);
-      loadData();
-    } catch (err) {
-      setActionError(err.response?.data?.message || err.message);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleRefuser = async () => {
-    setActionLoading(true);
-    setActionError(null);
-    try {
-      await api.post(`/virements/${virementId}/refuser`, {
-        motif: 'Refusé manuellement suite à solde insuffisant dans SAB'
-      });
-      loadData();
-    } catch (err) {
-      setActionError(err.response?.data?.message || err.message);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
   if (!isOpen) return null;
 
   const v = data?.virement;
@@ -85,281 +60,235 @@ export const VirementDetailModal = ({ isOpen, onClose, virementId }) => {
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-150">
-        <div className="w-full max-w-4xl rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="w-full max-w-4xl rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/70">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/70">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <div className="p-2 rounded-xl bg-[#772281]/15 text-[#772281] dark:text-[#f9b307] border border-[#772281]/30">
                 <CreditCard className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-white">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
                     Opération RTGS N° {v?.numeroOrdre || '...'}
                   </h3>
                   {v && <StatusBadge statut={v.statut} />}
                 </div>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Remise : {v?.remise?.nomFichier || 'N/A'} • Réf : {v?.remise?.referenceRemise || 'N/A'}
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Remise source : <span className="font-mono">{v?.remise?.nomFichier || 'N/A'}</span> (Réf : {v?.remise?.referenceRemise || '001'})
                 </p>
               </div>
             </div>
+
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Body */}
-          <div className="flex-1 p-6 overflow-y-auto space-y-6">
+          {/* Modal Body */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400">
-                <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-xs">Chargement des données détaillées...</span>
+              <div className="flex flex-col items-center justify-center py-12 gap-3 text-slate-400">
+                <div className="w-8 h-8 border-2 border-[#772281] border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-xs font-semibold">Chargement des données du virement...</span>
               </div>
-            ) : v ? (
+            ) : !v ? (
+              <div className="text-center py-12 text-rose-400 text-xs font-semibold">
+                Impossible de charger les données du virement #{virementId}.
+              </div>
+            ) : (
               <>
-                {/* Solde Insuffisant Alert Action Banner */}
-                {v.statut === 'ATTENTE_VALIDATION_SOLDE' && (
-                  <div className="rounded-2xl bg-amber-500/15 border border-amber-500/40 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center">
-                        <AlertOctagon className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-amber-200">
-                          Solde Insuffisant dans SAB — Décision Requise
-                        </h4>
-                        <p className="text-[11px] text-amber-300/80">
-                          Montant requis : <strong>{Number(v.montant).toLocaleString('fr-FR')} DZD</strong> vs Solde disponible : <strong>{Number(v.soldeCompteTrouve || 0).toLocaleString('fr-FR')} DZD</strong>
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        disabled={actionLoading}
-                        onClick={handleRefuser}
-                        className="px-3.5 py-1.5 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-bold flex items-center gap-1.5 disabled:opacity-50"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                        <span>Refuser (SI_RET)</span>
-                      </button>
-                      <button
-                        disabled={actionLoading}
-                        onClick={handleValider}
-                        className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 disabled:opacity-50"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Valider (Forcer OD/MT)</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {actionError && (
-                  <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs">
-                    {actionError}
-                  </div>
-                )}
-
-                {/* Montant & Libellé Banner */}
-                <div className="rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/20 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                {/* Montant & Libellé Card */}
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-50 via-slate-50 to-amber-50 dark:from-[#171026] dark:via-[#0d1322] dark:to-[#1a1528] border border-[#772281]/20 dark:border-[#772281]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
-                      Montant du Virement
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      Montant de l'opération RTGS
                     </span>
-                    <div className="text-2xl sm:text-3xl font-extrabold text-white mt-1">
-                      {Number(v.montant).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} <span className="text-emerald-400 text-lg font-bold">DZD</span>
+                    <div className="text-2xl font-black text-[#772281] dark:text-[#f9b307] tracking-tight mt-0.5 font-mono">
+                      {Number(v.montant).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} <span className="text-sm font-semibold">DZD</span>
                     </div>
                   </div>
-                  <div className="text-left sm:text-right">
-                    <span className="text-xs text-slate-400 font-medium">Libellé de l'opération :</span>
-                    <div className="text-sm font-semibold text-slate-200 mt-0.5 max-w-md">
-                      {v.libelle}
-                    </div>
-                    <div className="text-xs text-slate-400 mt-1">
-                      Date valeur : <span className="font-mono text-slate-200">{v.dateValeur}</span>
+
+                  <div className="sm:text-right">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      Libellé de la transaction
+                    </span>
+                    <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 max-w-sm mt-0.5">
+                      {v.libelle || 'VIREMENT RTGS'}
                     </div>
                   </div>
                 </div>
 
-                {/* Donneur d'Ordre vs Bénéficiaire Cards */}
+                {/* Donneur d'ordre vs Bénéficiaire */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Donneur d'Ordre */}
-                  <div className="rounded-xl bg-slate-950/60 border border-slate-800 p-4 space-y-3">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-800/80">
-                      <User className="w-4 h-4 text-emerald-400" />
-                      <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                  {/* Donneur d'ordre */}
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                      <User className="w-4 h-4 text-[#772281] dark:text-[#f9b307]" />
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                         Donneur d'Ordre (Émetteur BDL)
                       </h4>
                     </div>
-                    <div className="space-y-2 text-xs">
+
+                    <div className="space-y-1.5 text-xs">
                       <div>
                         <span className="text-slate-500">Nom / Raison Sociale :</span>
-                        <div className="font-semibold text-slate-200">{v.nomDonneur || 'N/A'}</div>
+                        <div className="font-bold text-slate-800 dark:text-slate-200">{v.nomDonneur || 'N/A'}</div>
                       </div>
                       <div>
                         <span className="text-slate-500">RIB Complet (20 pos) :</span>
-                        <div className="font-mono text-emerald-400 bg-slate-900 px-2 py-1 rounded mt-0.5 select-all">
-                          {v.ribDonneur}
-                        </div>
+                        <div className="font-mono text-slate-700 dark:text-slate-300 font-semibold">{v.ribDonneur}</div>
                       </div>
                       <div className="grid grid-cols-2 gap-2 pt-1">
                         <div>
-                          <span className="text-slate-500">Code Banque :</span>
-                          <div className="font-semibold text-slate-300">{v.codeBanqueDonneur} ({bDonneur?.nomBanque || 'BDL'})</div>
+                          <span className="text-slate-500">Banque :</span>
+                          <div className="font-semibold text-slate-700 dark:text-slate-300">{v.codeBanqueDonneur} - {bDonneur?.nomBanque || 'BDL'}</div>
                         </div>
                         <div>
-                          <span className="text-slate-500">Code Agence :</span>
-                          <div className="font-semibold text-slate-300">{v.codeAgenceDonneur}</div>
+                          <span className="text-slate-500">Agence :</span>
+                          <div className="font-mono text-slate-700 dark:text-slate-300">{v.codeAgenceDonneur}</div>
                         </div>
                       </div>
                       <div>
                         <span className="text-slate-500">Compte SAB (15 pos) :</span>
-                        <div className="font-mono text-slate-300 bg-slate-900/80 px-2 py-0.5 rounded mt-0.5">
-                          {v.compteDonneur15}
-                        </div>
+                        <div className="font-mono text-[#772281] dark:text-[#f9b307] font-bold">{v.compteDonneur15}</div>
                       </div>
                       <div>
                         <span className="text-slate-500">Adresse :</span>
-                        <div className="text-slate-400">{v.adresseDonneur || 'N/A'}</div>
+                        <div className="text-slate-600 dark:text-slate-400">{v.adresseDonneur || 'N/A'}</div>
                       </div>
                     </div>
                   </div>
 
                   {/* Bénéficiaire */}
-                  <div className="rounded-xl bg-slate-950/60 border border-slate-800 p-4 space-y-3">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-800/80">
-                      <Building className="w-4 h-4 text-sky-400" />
-                      <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                        Bénéficiaire (Banque Destinataire)
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+                      <Building className="w-4 h-4 text-[#772281] dark:text-[#f9b307]" />
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                        Bénéficiaire (Banque Réceptrice)
                       </h4>
                     </div>
-                    <div className="space-y-2 text-xs">
+
+                    <div className="space-y-1.5 text-xs">
                       <div>
-                        <span className="text-slate-500">Nom / Raison Sociale :</span>
-                        <div className="font-semibold text-slate-200">{v.nomBeneficiaire || 'N/A'}</div>
+                        <span className="text-slate-500">Nom du Bénéficiaire :</span>
+                        <div className="font-bold text-slate-800 dark:text-slate-200">{v.nomBeneficiaire || 'N/A'}</div>
                       </div>
                       <div>
                         <span className="text-slate-500">RIB Bénéficiaire (20 pos) :</span>
-                        <div className="font-mono text-sky-400 bg-slate-900 px-2 py-1 rounded mt-0.5 select-all">
-                          {v.ribBeneficiaire}
-                        </div>
+                        <div className="font-mono text-slate-700 dark:text-slate-300 font-semibold">{v.ribBeneficiaire}</div>
                       </div>
                       <div className="grid grid-cols-2 gap-2 pt-1">
                         <div>
                           <span className="text-slate-500">Banque Réceptrice :</span>
-                          <div className="font-semibold text-slate-300">
+                          <div className="font-semibold text-slate-700 dark:text-slate-300">
                             {v.codeBanqueBeneficiaire} - {bBenif?.nomBanque || 'Banque Tiers'}
                           </div>
                         </div>
                         <div>
                           <span className="text-slate-500">BIC SWIFT :</span>
-                          <div className="font-mono text-amber-400 font-semibold">{bBenif?.bicSwift || `BK${v.codeBanqueBeneficiaire}DZALXXX`}</div>
+                          <div className="font-mono text-[#772281] dark:text-[#f9b307] font-bold">{bBenif?.bicSwift || `BK${v.codeBanqueBeneficiaire}DZALXXX`}</div>
                         </div>
                       </div>
                       <div>
-                        <span className="text-slate-500">Compte Règlement Banque d'Algérie :</span>
-                        <div className="font-mono text-slate-300 bg-slate-900/80 px-2 py-0.5 rounded mt-0.5">
+                        <span className="text-slate-500">Compte Règlement BA :</span>
+                        <div className="font-mono text-slate-700 dark:text-slate-300 bg-slate-200/60 dark:bg-slate-800/80 px-2 py-0.5 rounded mt-0.5">
                           {bBenif?.compteReglement || `97110000${v.codeBanqueBeneficiaire}`}
                         </div>
                       </div>
                       <div>
                         <span className="text-slate-500">Adresse :</span>
-                        <div className="text-slate-400">{v.adresseBeneficiaire || 'N/A'}</div>
+                        <div className="text-slate-600 dark:text-slate-400">{v.adresseBeneficiaire || 'N/A'}</div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Section Contrôle Solde Oracle 11g */}
-                <div className="rounded-xl bg-slate-950/80 border border-slate-800 p-4 space-y-2">
+                {/* Section Contrôle Solde Oracle 11g & Clé d'Unicité SAB */}
+                <div className="rounded-xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Database className="w-4 h-4 text-emerald-400" />
-                      <span className="text-xs font-bold text-slate-200">
-                        Vérification Solde Core Banking (Oracle 11g - SAB)
+                      <Database className="w-4 h-4 text-[#772281] dark:text-[#f9b307]" />
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-200">
+                        Suivi Comptable Core Banking SAB (Oracle 11g)
                       </span>
                     </div>
-                    {v.oracleVerifie && (
-                      <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded border border-emerald-500/20">
-                        Requête SAB Exécutée
+                    {v.cleUniciteSab && (
+                      <span className="text-[11px] font-mono text-[#772281] dark:text-[#f9b307] bg-[#772281]/10 dark:bg-[#772281]/25 px-2.5 py-0.5 rounded border border-[#772281]/30">
+                        Clé: {v.cleUniciteSab}
                       </span>
                     )}
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
-                    <div className="p-2.5 rounded-lg bg-slate-900">
-                      <span className="text-slate-500">Compte Interrogé (15 pos) :</span>
-                      <div className="font-mono text-slate-200 font-semibold mt-0.5">{v.compteDonneur15}</div>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-slate-900">
-                      <span className="text-slate-500">Solde Trouvé dans SAB :</span>
-                      <div className="font-mono text-white font-bold mt-0.5">
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-xs">
+                    <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                      <span className="text-slate-500">Solde Trouvé SAB :</span>
+                      <div className="font-mono text-slate-900 dark:text-white font-bold mt-0.5">
                         {v.soldeCompteTrouve !== null
                           ? `${Number(v.soldeCompteTrouve).toLocaleString('fr-FR')} DZD`
-                          : 'Non vérifié'}
+                          : 'Vérifié lors du lot OD'}
                       </div>
                     </div>
-                    <div className="p-2.5 rounded-lg bg-slate-900">
-                      <span className="text-slate-500">Décision & Règle :</span>
+
+                    <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                      <span className="text-slate-500">Statut du Cycle RTGS :</span>
                       <div className="font-semibold mt-0.5">
-                        {v.statut === 'VALIDE_TRAITE' ? (
-                          <span className="text-emerald-400 flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Solde Suffisant (OK)
-                          </span>
-                        ) : v.statut === 'ATTENTE_VALIDATION_SOLDE' ? (
-                          <span className="text-amber-400 flex items-center gap-1">
-                            <AlertOctagon className="w-3.5 h-3.5" /> Solde Insuffisant (En Attente)
-                          </span>
-                        ) : v.statut === 'REJETE_DOUBLON' ? (
-                          <span className="text-purple-400 flex items-center gap-1">
-                            <Copy className="w-3.5 h-3.5" /> Doublon Détecté (Rejeté)
-                          </span>
-                        ) : v.statut === 'REJETE_SOLDE' ? (
-                          <span className="text-rose-400 flex items-center gap-1">
-                            <AlertCircle className="w-3.5 h-3.5" /> Solde Insuffisant (Refusé)
-                          </span>
-                        ) : (
-                          <span className="text-amber-400">Non éligible RTGS</span>
-                        )}
+                        <StatusBadge statut={v.statut} />
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                      <span className="text-slate-500">Lot OD Lié :</span>
+                      <div className="font-mono text-slate-800 dark:text-slate-300 font-semibold mt-0.5 truncate">
+                        {v.fichierOdBatch || 'En attente lot'}
                       </div>
                     </div>
                   </div>
+
                   {v.motifRejetOuIgnorer && (
-                    <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs mt-2">
-                      <strong>Info :</strong> {v.motifRejetOuIgnorer}
-                    </div>
-                  )}
-                  {v.decisionPar && (
-                    <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 text-xs mt-2">
-                      Décision prise par <strong>{v.decisionPar}</strong> ({v.decisionType}) le {new Date(v.decisionDate).toLocaleString()}
+                    <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs mt-2">
+                      <strong>Motif de Rejet / Information :</strong> {v.motifRejetOuIgnorer}
                     </div>
                   )}
                 </div>
 
                 {/* Section Fichiers Générés */}
-                <div className="rounded-xl bg-slate-950/60 border border-slate-800 p-4 space-y-3">
-                  <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                <div className="rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 p-4 space-y-3">
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 uppercase tracking-wider">
                     Fichiers Produits par le Système
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {/* Fichier SWIFT MT103 */}
-                    <div className={`p-3.5 rounded-xl border flex flex-col justify-between ${v.fichierMt103Genere ? 'bg-slate-900/90 border-emerald-500/30' : 'bg-slate-900/30 border-slate-800/40 opacity-50'}`}>
+                    {/* Fichier Batch OD */}
+                    <div className={`p-3.5 rounded-xl border flex flex-col justify-between ${v.fichierOdBatch ? 'bg-white dark:bg-slate-900 border-amber-500/30' : 'bg-slate-100 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800/40 opacity-60'}`}>
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-bold text-white">SWIFT MT103</span>
-                          <FileCode className="w-4 h-4 text-emerald-400" />
+                          <span className="text-xs font-bold text-slate-900 dark:text-white">Lot OD (ZCPTODA9)</span>
+                          <Layers className="w-4 h-4 text-amber-500" />
                         </div>
-                        <p className="text-[11px] text-slate-400 font-mono truncate">
-                          {v.fichierMt103Genere || 'Non généré'}
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">
+                          {v.fichierOdBatch || 'Non généré'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Fichier SWIFT MT103 */}
+                    <div className={`p-3.5 rounded-xl border flex flex-col justify-between ${v.fichierMt103Genere ? 'bg-white dark:bg-slate-900 border-emerald-500/30' : 'bg-slate-100 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800/40 opacity-60'}`}>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-bold text-slate-900 dark:text-white">SWIFT MT103</span>
+                          <FileCode className="w-4 h-4 text-emerald-500" />
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">
+                          {v.fichierMt103Genere || 'En attente comptabilisation'}
                         </p>
                       </div>
                       {v.fichierMt103Genere && (
                         <button
                           onClick={() => setViewerFile({ type: 'mt103', title: 'Message SWIFT MT103' })}
-                          className="mt-3 flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition-colors"
+                          className="mt-3 flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-700 dark:text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition-colors"
                         >
                           <ExternalLink className="w-3 h-3" />
                           <span>Visualiser MT103</span>
@@ -367,86 +296,43 @@ export const VirementDetailModal = ({ isOpen, onClose, virementId }) => {
                       )}
                     </div>
 
-                    {/* Fichier OD */}
-                    <div className={`p-3.5 rounded-xl border flex flex-col justify-between ${v.fichierOdGenere ? 'bg-slate-900/90 border-emerald-500/30' : 'bg-slate-900/30 border-slate-800/40 opacity-50'}`}>
+                    {/* Fichier SI Retour (Rejet ou Comptabilisé) */}
+                    <div className={`p-3.5 rounded-xl border flex flex-col justify-between ${(v.fichierSiRetGenere || v.fichierSiCptGenere) ? 'bg-white dark:bg-slate-900 border-[#772281]/30' : 'bg-slate-100 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800/40 opacity-60'}`}>
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-bold text-white">Fichier OD (Comptable)</span>
-                          <FileText className="w-4 h-4 text-emerald-400" />
+                          <span className="text-xs font-bold text-slate-900 dark:text-white">
+                            {v.fichierSiCptGenere ? 'Accusé SI_VIR_CPT' : 'SI Retour (Rejet)'}
+                          </span>
+                          <FileText className="w-4 h-4 text-[#772281] dark:text-[#f9b307]" />
                         </div>
-                        <p className="text-[11px] text-slate-400 font-mono truncate">
-                          {v.fichierOdGenere || 'Non généré'}
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">
+                          {v.fichierSiCptGenere || v.fichierSiRetGenere || 'Non généré'}
                         </p>
                       </div>
-                      {v.fichierOdGenere && (
+                      {(v.fichierSiRetGenere || v.fichierSiCptGenere) && (
                         <button
-                          onClick={() => setViewerFile({ type: 'od', title: 'Fichier OD (Opérations Diverses)' })}
-                          className="mt-3 flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition-colors"
+                          onClick={() => setViewerFile({ 
+                            type: v.fichierSiCptGenere ? 'si_cpt' : 'si_retour', 
+                            title: v.fichierSiCptGenere ? 'Fichier SI_VIR_CPT (Comptabilisé)' : 'Fichier SI_VIR_RJT (Rejet)' 
+                          })}
+                          className="mt-3 flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg bg-[#772281]/15 hover:bg-[#772281]/25 text-[#772281] dark:text-[#f9b307] text-xs font-semibold border border-[#772281]/30 transition-colors"
                         >
                           <ExternalLink className="w-3 h-3" />
-                          <span>Visualiser OD</span>
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Fichier SI Retour */}
-                    <div className={`p-3.5 rounded-xl border flex flex-col justify-between ${v.fichierSiRetGenere ? 'bg-rose-950/20 border-rose-500/30' : 'bg-slate-900/30 border-slate-800/40 opacity-50'}`}>
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-bold text-rose-300">Fichier SI Retour</span>
-                          <FileText className="w-4 h-4 text-rose-400" />
-                        </div>
-                        <p className="text-[11px] text-slate-400 font-mono truncate">
-                          {v.fichierSiRetGenere || 'Non généré'}
-                        </p>
-                      </div>
-                      {v.fichierSiRetGenere && (
-                        <button
-                          onClick={() => setViewerFile({ type: 'si_ret', title: 'Fichier SI Retour (Rejet)' })}
-                          className="mt-3 flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 text-xs font-semibold border border-rose-500/30 transition-colors"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          <span>Visualiser SI_RET</span>
+                          <span>Visualiser Fichier SI</span>
                         </button>
                       )}
                     </div>
                   </div>
                 </div>
-
-                {/* Historique des logs / Traçabilité */}
-                {v.logs && v.logs.length > 0 && (
-                  <div className="rounded-xl bg-slate-950/60 border border-slate-800 p-4 space-y-3">
-                    <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                      Journal des Événements & Audit
-                    </h4>
-                    <div className="space-y-2">
-                      {v.logs.map((log) => (
-                        <div key={log.id} className="flex items-start gap-3 p-2.5 rounded-lg bg-slate-900/80 border border-slate-800/80 text-xs">
-                          <span className="text-[10px] font-mono text-slate-500 whitespace-nowrap pt-0.5">
-                            {new Date(log.createdAt).toLocaleTimeString()}
-                          </span>
-                          <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
-                            log.niveau === 'SUCCESS' ? 'bg-emerald-500/20 text-emerald-400' :
-                            log.niveau === 'ERROR' ? 'bg-rose-500/20 text-rose-400' :
-                            log.niveau === 'WARNING' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-700 text-slate-300'
-                          }`}>
-                            {log.type}
-                          </span>
-                          <span className="text-slate-300 flex-1">{log.message}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </>
-            ) : null}
+            )}
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end px-6 py-4 border-t border-slate-800 bg-slate-950/70">
+          <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 flex items-center justify-end">
             <button
               onClick={onClose}
-              className="px-5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
+              className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors"
             >
               Fermer
             </button>
@@ -454,12 +340,12 @@ export const VirementDetailModal = ({ isOpen, onClose, virementId }) => {
         </div>
       </div>
 
-      {/* Nested file preview modal */}
+      {/* Quick File Viewer Modal */}
       {viewerFile && (
         <FileViewerModal
           isOpen={true}
           onClose={() => setViewerFile(null)}
-          virementId={v.id}
+          virementId={virementId}
           fileType={viewerFile.type}
           title={viewerFile.title}
         />

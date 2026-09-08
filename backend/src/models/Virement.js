@@ -74,18 +74,29 @@ const Virement = sequelize.define('Virement', {
     type: DataTypes.STRING(8), // AAAAMMJJ
     allowNull: true
   },
-  // Statut & Décision
+  // Clé d'unicité SAB Oracle: (comptedonneur||dateremise||numeroremise)
+  cleUniciteSab: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  // Statut & Cycle de vie du virement
+  // RECU -> OD_GEN -> INTEGRE -> ENVOYE | REJETE | IGNORE_FILTRE
   statut: {
     type: DataTypes.ENUM(
+      'RECU',
+      'OD_GEN',
+      'INTEGRE',
+      'ENVOYE',
+      'REJETE',
+      'IGNORE_FILTRE',
       'VALIDE_TRAITE',
       'REJETE_SOLDE',
       'REJETE_DOUBLON',
-      'IGNORE_FILTRE',
       'EN_ATTENTE',
       'ATTENTE_VALIDATION_SOLDE',
       'ERREUR'
     ),
-    defaultValue: 'EN_ATTENTE'
+    defaultValue: 'RECU'
   },
   motifRejetOuIgnorer: {
     type: DataTypes.STRING(255),
@@ -112,7 +123,24 @@ const Virement = sequelize.define('Virement', {
     type: DataTypes.BOOLEAN,
     defaultValue: false
   },
+  // Horodatages des étapes SAB
+  dateGenerationOd: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  dateIntegrationSab: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  dateComptabilisationSab: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
   // Fichiers générés
+  fichierOdBatch: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
   fichierOdGenere: {
     type: DataTypes.STRING(255),
     allowNull: true
@@ -122,6 +150,10 @@ const Virement = sequelize.define('Virement', {
     allowNull: true
   },
   fichierSiRetGenere: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  fichierSiCptGenere: {
     type: DataTypes.STRING(255),
     allowNull: true
   }
