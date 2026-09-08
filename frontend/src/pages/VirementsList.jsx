@@ -270,18 +270,27 @@ export const VirementsList = () => {
                             <FileCode className="w-3.5 h-3.5" />
                           </button>
                         )}
-                        {v.fichierOdGenere && (
+                        {(v.fichierOdBatch || v.fichierOdGenere) && (
                           <button
-                            onClick={() => setQuickViewer({ id: v.id, type: 'od', title: `Fichier OD - ${v.numeroOrdre}` })}
+                            onClick={() => setQuickViewer({ id: v.id, type: 'od_batch', title: `Lot OD (ZCPTODA9) - ${v.numeroOrdre}` })}
+                            className="p-1.5 rounded-lg bg-[#772281]/20 hover:bg-[#772281]/30 text-[#f9b307] border border-[#772281]/40"
+                            title="Voir Fichier OD / Lot OD"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {v.fichierSiCptGenere && (
+                          <button
+                            onClick={() => setQuickViewer({ id: v.id, type: 'si_cpt', title: `SI Retour Comptabilisé - ${v.numeroOrdre}` })}
                             className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                            title="Voir Fichier OD"
+                            title="Voir SI_VIR_CPT"
                           >
                             <FileText className="w-3.5 h-3.5" />
                           </button>
                         )}
                         {v.fichierSiRetGenere && (
                           <button
-                            onClick={() => setQuickViewer({ id: v.id, type: 'si_ret', title: `SI Retour - ${v.numeroOrdre}` })}
+                            onClick={() => setQuickViewer({ id: v.id, type: 'si_ret', title: `SI Retour Rejet - ${v.numeroOrdre}` })}
                             className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30"
                             title="Voir SI Retour"
                           >

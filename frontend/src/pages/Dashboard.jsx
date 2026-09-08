@@ -423,18 +423,27 @@ export const Dashboard = ({ setActiveTab }) => {
                               <FileCode className="w-3.5 h-3.5" />
                             </button>
                           )}
-                          {v.fichierOdGenere && (
+                          {(v.fichierOdBatch || v.fichierOdGenere) && (
                             <button
-                              onClick={() => setQuickViewer({ id: v.id, type: 'od', title: 'Fichier OD' })}
+                              onClick={() => setQuickViewer({ id: v.id, type: 'od_batch', title: 'Fichier Lot OD (ZCPTODA9)' })}
+                              className="p-1.5 rounded-lg bg-[#772281]/20 hover:bg-[#772281]/30 text-[#f9b307] border border-[#772281]/40"
+                              title="Voir Fichier OD / Lot OD"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {v.fichierSiCptGenere && (
+                            <button
+                              onClick={() => setQuickViewer({ id: v.id, type: 'si_cpt', title: 'Accusé SI Retour Comptabilisé (SI_VIR_CPT)' })}
                               className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                              title="Voir Fichier OD"
+                              title="Voir SI_VIR_CPT"
                             >
                               <FileText className="w-3.5 h-3.5" />
                             </button>
                           )}
                           {v.fichierSiRetGenere && (
                             <button
-                              onClick={() => setQuickViewer({ id: v.id, type: 'si_ret', title: 'Fichier SI Retour' })}
+                              onClick={() => setQuickViewer({ id: v.id, type: 'si_ret', title: 'Fichier SI Retour Rejet (SI_VIR_RJT)' })}
                               className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30"
                               title="Voir SI Retour"
                             >

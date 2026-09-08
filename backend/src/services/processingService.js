@@ -388,22 +388,25 @@ class ProcessingService {
     const virements = await Virement.findAll({ where: { remiseId } });
     if (!virements || virements.length === 0) return;
 
-    const hasPending = virements.some(v => v.statut === 'ATTENTE_VALIDATION_SOLDE' || v.statut === 'EN_ATTENTE');
-    const hasValides = virements.some(v => v.statut === 'VALIDE_TRAITE');
-    const hasRejetes = virements.some(v => v.statut === 'REJETE_SOLDE' || v.statut === 'REJETE_DOUBLON');
+    const hasRecu = virements.some(v => v.statut === 'RECU' || v.statut === 'EN_ATTENTE');
+    const hasInSab = virements.some(v => v.statut === 'OD_GEN' || v.statut === 'INTEGRE');
+    const hasEnvoyes = virements.some(v => v.statut === 'ENVOYE' || v.statut === 'VALIDE_TRAITE');
+    const hasRejetes = virements.some(v => v.statut === 'REJETE' || v.statut === 'REJETE_SOLDE' || v.statut === 'REJETE_DOUBLON');
     const allIgnored = virements.every(v => v.statut === 'IGNORE_FILTRE');
 
     let newStatut = 'TRAITE_COMPLET';
     if (allIgnored) {
       newStatut = 'IGNORE';
-    } else if (hasPending) {
-      newStatut = 'ATTENTE_VALIDATION';
-    } else if (hasValides && hasRejetes) {
+    } else if (hasRecu) {
+      newStatut = 'EN_ATTENTE_OD';
+    } else if (hasInSab) {
+      newStatut = 'EN_COURS_SAB';
+    } else if (hasEnvoyes && hasRejetes) {
       newStatut = 'TRAITE_PARTIEL';
-    } else if (hasValides && !hasRejetes) {
+    } else if (hasEnvoyes && !hasRejetes) {
       newStatut = 'TRAITE_COMPLET';
-    } else if (!hasValides && hasRejetes) {
-      newStatut = 'TRAITE_COMPLET';
+    } else if (!hasEnvoyes && hasRejetes) {
+      newStatut = 'REJETE_TOTAL';
     }
 
     await remise.update({ statut: newStatut });

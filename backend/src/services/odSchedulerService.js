@@ -299,11 +299,22 @@ class OdSchedulerService {
         }
       }
 
+      // 4. Mettre à jour le statut global des remises impactées
+      const affectedRemiseIds = [...new Set(virementsRecus.map(v => v.remiseId).filter(Boolean))];
+      for (const rId of affectedRemiseIds) {
+        try {
+          const processingService = require('./processingService');
+          await processingService.recalculateRemiseStatut(rId);
+        } catch (rErr) {
+          console.error(`[OdScheduler] Erreur recalcul statut remise #${rId}:`, rErr);
+        }
+      }
+
       console.log(`[OdScheduler] Lot OD terminé : ${virementsValides.length} validé(s), ${virementsRejetes.length} rejeté(s).`);
 
       return {
         success: true,
-        message: `Lot OD exécuté : ${virementsValides.length} virement(s) intégrés dans ${odBatchFileName || 'aucun'}, ${virementsRejetes.length} rejeté(s).`,
+        message: `Lot OD exécuté : ${virementsValides.length} virement(s) intégrés dans ${odBatchFileName || 'aucun'}, ${virementsRejetes.length} rejeté(s) automatiquement pour solde insuffisant.`,
         processedCount: virementsRecus.length,
         validesCount: virementsValides.length,
         rejetesCount: virementsRejetes.length,
@@ -441,6 +452,17 @@ class OdSchedulerService {
           }
         } catch (itemErr) {
           console.error(`[OdScheduler] Erreur vérification SAB pour virement #${virement.id}:`, itemErr);
+        }
+      }
+
+      // Mettre à jour le statut global des remises impactées
+      const affectedRemiseIds = [...new Set(virementsEnAttente.map(v => v.remiseId).filter(Boolean))];
+      for (const rId of affectedRemiseIds) {
+        try {
+          const processingService = require('./processingService');
+          await processingService.recalculateRemiseStatut(rId);
+        } catch (rErr) {
+          console.error(`[OdScheduler] Erreur recalcul statut remise #${rId}:`, rErr);
         }
       }
 
