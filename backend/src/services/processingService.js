@@ -24,6 +24,22 @@ class ProcessingService {
     console.log(`[ProcessingService] Démarrage du traitement de ${fileName}`);
 
     try {
+      // 0. Vérification si le fichier a déjà été reçu et enregistré
+      const existingRemise = await Remise.findOne({
+        where: { nomFichier: fileName }
+      });
+
+      if (existingRemise) {
+        console.log(`[ProcessingService] Fichier ${fileName} déjà reçu et enregistré (Remise ID #${existingRemise.id}). Non retraité.`);
+        return {
+          success: true,
+          alreadyProcessed: true,
+          remiseId: existingRemise.id,
+          nomFichier: fileName,
+          message: `Fichier ${fileName} déjà reçu et intégré précédemment.`
+        };
+      }
+
       const fileContent = fs.readFileSync(filePath, 'utf-8');
       const parsedData = EdiParser.parse(fileContent, fileName);
 
@@ -217,10 +233,9 @@ class ProcessingService {
         try {
           if (fs.existsSync(filePath)) {
             fs.copyFileSync(filePath, destIgnorerPath);
-            fs.unlinkSync(filePath);
           }
         } catch (e) {
-          console.error('[ProcessingService] Erreur déplacement vers ignorer', e);
+          console.error('[ProcessingService] Erreur copie vers ignorer', e);
         }
       } else if (countRejetes > 0 && countValides > 0) {
         globalStatut = 'PARTIEL';

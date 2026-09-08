@@ -34,25 +34,30 @@ class FileWatcherService {
 
     this.watcher.on('add', async (sourceFilePath) => {
       const fileName = path.basename(sourceFilePath);
-      console.log(`[Watcher] Nouveau fichier détecté dans source/ : ${fileName}`);
 
       // Attendre un court instant pour s'assurer de la fin d'écriture
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      const inputFilePath = path.join(FOLDERS.input, fileName);
-
       try {
-        // 1. Copier vers input/
-        fs.copyFileSync(sourceFilePath, inputFilePath);
-        console.log(`[Watcher] Fichier copié vers input/ : ${inputFilePath}`);
+        const { Remise } = require('../models');
+        const existingRemise = await Remise.findOne({ where: { nomFichier: fileName } });
+        if (existingRemise) {
+          // Fichier déjà reçu et enregistré, on le laisse intact dans source sans le retraiter
+          return;
+        }
 
-        // Supprimer du dossier source après copie réussie
-        fs.unlinkSync(sourceFilePath);
+        console.log(`[Watcher] Nouveau fichier EDI détecté dans source/ : ${fileName}`);
+
+        const inputFilePath = path.join(FOLDERS.input, fileName);
+
+        // 1. Copier vers input/ sans supprimer du dossier source
+        fs.copyFileSync(sourceFilePath, inputFilePath);
+        console.log(`[Watcher] Fichier copié vers input/ (conservé intact dans source/) : ${inputFilePath}`);
 
         await TraitementLog.create({
           type: 'INGESTION',
           niveau: 'INFO',
-          message: `Fichier ${fileName} détecté dans le répertoire source et transféré vers input/.`,
+          message: `Fichier ${fileName} détecté dans source/, copié vers input/ et conservé dans source/.`,
           nomFichier: fileName
         });
 

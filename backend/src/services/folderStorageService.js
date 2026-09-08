@@ -315,14 +315,21 @@ class FolderStorageService {
         // Filtrer fichiers .edi ou .txt
         const targetFiles = fileList.filter(f => f.isFile && (f.name.endsWith('.edi') || f.name.endsWith('.txt')));
 
+        const { Remise } = require('../models');
+
         for (const remoteFile of targetFiles) {
+          const existing = await Remise.findOne({ where: { nomFichier: remoteFile.name } });
+          if (existing) {
+            // Déjà traité, conservé dans la source
+            continue;
+          }
+
           const localInputPath = path.join(FOLDERS.input, remoteFile.name);
           await client.downloadTo(localInputPath, remoteFile.name);
-          await client.remove(remoteFile.name); // Supprimer de la source distante
           downloadedCount++;
           downloadedFiles.push(remoteFile.name);
 
-          console.log(`[Storage FTP Poll] Téléchargé et supprimé de la source distante : ${remoteFile.name}`);
+          console.log(`[Storage FTP Poll] Téléchargé (conservé dans la source) : ${remoteFile.name}`);
 
           if (processingServiceCallback) {
             await processingServiceCallback(localInputPath, remoteFile.name);
@@ -347,17 +354,23 @@ class FolderStorageService {
         const remoteDir = config.remotePath || '/';
         const fileList = await sftp.list(remoteDir);
         const targetFiles = fileList.filter(f => f.type === '-' && (f.name.endsWith('.edi') || f.name.endsWith('.txt')));
+        const { Remise } = require('../models');
 
         for (const remoteFile of targetFiles) {
+          const existing = await Remise.findOne({ where: { nomFichier: remoteFile.name } });
+          if (existing) {
+            // Déjà traité, conservé dans la source
+            continue;
+          }
+
           const remoteFilePath = path.posix.join(remoteDir, remoteFile.name);
           const localInputPath = path.join(FOLDERS.input, remoteFile.name);
 
           await sftp.fastGet(remoteFilePath, localInputPath);
-          await sftp.delete(remoteFilePath);
           downloadedCount++;
           downloadedFiles.push(remoteFile.name);
 
-          console.log(`[Storage SFTP Poll] Téléchargé et supprimé de la source SFTP : ${remoteFile.name}`);
+          console.log(`[Storage SFTP Poll] Téléchargé (conservé dans la source SFTP) : ${remoteFile.name}`);
 
           if (processingServiceCallback) {
             await processingServiceCallback(localInputPath, remoteFile.name);
