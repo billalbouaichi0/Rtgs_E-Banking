@@ -48,25 +48,48 @@ export const OdScheduler = () => {
   const fetchScheduleData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await api.get('/system/od-schedule');
-      const { settings, statusCounts: counts, nextExecution: nextExec } = res.data;
       
-      setFixedHoursStr(settings.od_generation_hours || '12:00, 15:00, 16:30');
-      setPollingMinutes(parseInt(settings.sab_polling_interval_minutes, 10) || 5);
-      setAutoBatchEnabled(settings.od_auto_batch_enabled === 'true' || settings.od_auto_batch_enabled === true);
-      setAutoSabPollEnabled(settings.sab_auto_poll_enabled === 'true' || settings.sab_auto_poll_enabled === true);
+      const data = res.data || {};
+      const settings = data.settings || data || {};
+      const counts = data.statusCounts || {};
       
-      if (counts) {
-        setStatusCounts(counts);
+      // Extraction sécurisée des heures
+      let hoursValue = settings.od_generation_hours;
+      if (!hoursValue && Array.isArray(settings.batchHours)) {
+        hoursValue = settings.batchHours.join(', ');
+      } else if (!hoursValue && typeof settings.batchHours === 'string') {
+        hoursValue = settings.batchHours;
       }
-      if (nextExec) {
-        setNextExecution(nextExec);
+      setFixedHoursStr(hoursValue || '12:00, 15:00, 16:30');
+
+      // Extraction sécurisée de la fréquence polling
+      const intervalVal = settings.sab_polling_interval_minutes !== undefined 
+        ? settings.sab_polling_interval_minutes 
+        : (settings.pollIntervalMinutes !== undefined ? settings.pollIntervalMinutes : 5);
+      setPollingMinutes(parseInt(intervalVal, 10) || 5);
+
+      // Extraction sécurisée des switches automatiques
+      const autoBatch = settings.od_auto_batch_enabled !== undefined 
+        ? settings.od_auto_batch_enabled 
+        : (settings.autoEnabled !== undefined ? settings.autoEnabled : true);
+      setAutoBatchEnabled(autoBatch === 'true' || autoBatch === true);
+
+      const autoSab = settings.sab_auto_poll_enabled !== undefined 
+        ? settings.sab_auto_poll_enabled 
+        : (settings.autoEnabled !== undefined ? settings.autoEnabled : true);
+      setAutoSabPollEnabled(autoSab === 'true' || autoSab === true);
+      
+      if (counts && typeof counts === 'object') {
+        setStatusCounts(prev => ({ ...prev, ...counts }));
       }
       
       // Fetch SAB live table
       try {
         const sabRes = await api.get('/system/od-schedule/sab-table');
-        setSabRecords(sabRes.data.records || []);
+        const records = sabRes.data?.records || sabRes.data?.zcptod0 || [];
+        setSabRecords(Array.isArray(records) ? records : []);
       } catch (sabErr) {
         console.warn('Erreur chargement table SAB:', sabErr);
       }

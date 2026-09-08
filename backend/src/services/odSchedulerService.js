@@ -31,7 +31,11 @@ class OdSchedulerService {
     try {
       const hoursSetting = await SystemSetting.findByPk('od_batch_hours');
       if (hoursSetting && hoursSetting.value) {
-        this.batchHours = JSON.parse(hoursSetting.value);
+        try {
+          this.batchHours = JSON.parse(hoursSetting.value);
+        } catch {
+          this.batchHours = hoursSetting.value.split(',').map(h => h.trim()).filter(Boolean);
+        }
       }
 
       const pollSetting = await SystemSetting.findByPk('sab_poll_interval_minutes');
@@ -52,26 +56,37 @@ class OdSchedulerService {
    * Sauvegarde les paramètres dans la base de données
    */
   async saveSettings(settings) {
-    if (settings.batchHours) {
-      this.batchHours = settings.batchHours;
+    // 1. Heures de génération
+    let hours = settings.batchHours !== undefined ? settings.batchHours : settings.od_generation_hours;
+    if (typeof hours === 'string') {
+      hours = hours.split(',').map(h => h.trim()).filter(Boolean);
+    }
+    if (Array.isArray(hours) && hours.length > 0) {
+      this.batchHours = hours;
       await SystemSetting.upsert({
         key: 'od_batch_hours',
-        value: JSON.stringify(settings.batchHours),
+        value: JSON.stringify(this.batchHours),
         description: 'Heures programmées de génération du lot OD (ex: 12:00, 15:00, 16:30)'
       });
     }
 
-    if (settings.pollIntervalMinutes) {
-      this.pollIntervalMinutes = Number(settings.pollIntervalMinutes);
+    // 2. Fréquence polling SAB
+    const pollInterval = settings.pollIntervalMinutes !== undefined ? settings.pollIntervalMinutes : settings.sab_polling_interval_minutes;
+    if (pollInterval !== undefined && !isNaN(pollInterval)) {
+      this.pollIntervalMinutes = Number(pollInterval);
       await SystemSetting.upsert({
         key: 'sab_poll_interval_minutes',
-        value: String(settings.pollIntervalMinutes),
+        value: String(this.pollIntervalMinutes),
         description: 'Fréquence en minutes du polling de comptabilisation SAB zcptod0'
       });
     }
 
-    if (settings.autoEnabled !== undefined) {
-      this.autoEnabled = Boolean(settings.autoEnabled);
+    // 3. Activation automatique
+    const auto = settings.autoEnabled !== undefined 
+      ? settings.autoEnabled 
+      : (settings.od_auto_batch_enabled !== undefined ? settings.od_auto_batch_enabled : settings.sab_auto_poll_enabled);
+    if (auto !== undefined) {
+      this.autoEnabled = Boolean(auto === true || auto === 'true');
       await SystemSetting.upsert({
         key: 'scheduler_auto_enabled',
         value: String(this.autoEnabled),
@@ -87,10 +102,15 @@ class OdSchedulerService {
   }
 
   getSettings() {
+    const hoursStr = Array.isArray(this.batchHours) ? this.batchHours.join(', ') : (this.batchHours || '12:00, 15:00, 16:30');
     return {
       batchHours: this.batchHours,
+      od_generation_hours: hoursStr,
       pollIntervalMinutes: this.pollIntervalMinutes,
+      sab_polling_interval_minutes: this.pollIntervalMinutes,
       autoEnabled: this.autoEnabled,
+      od_auto_batch_enabled: this.autoEnabled,
+      sab_auto_poll_enabled: this.autoEnabled,
       isRunning: this.isRunning,
       lastBatchExecution: this.lastBatchExecution,
       lastSabPollExecution: this.lastSabPollExecution
