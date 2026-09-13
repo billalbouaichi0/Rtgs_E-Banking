@@ -177,7 +177,32 @@ const seedDatabase = async () => {
       }
     });
 
-    console.log('[Seed] Paramètres planificateur OD initialisés (12:00, 15:00, 16:30 - Check SAB 5 min).');
+    // 5. Initialisation des adresses emails des structures BDL
+    await SystemSetting.findOrCreate({
+      where: { key: 'email_structure_dcc' },
+      defaults: {
+        value: process.env.EMAIL_STRUCTURE_DCC || 'dcc-comptabilite@bdl.dz',
+        description: 'Email de la structure DCC (Notification Ordres de Débit OD)'
+      }
+    });
+
+    await SystemSetting.findOrCreate({
+      where: { key: 'email_structure_dtm' },
+      defaults: {
+        value: process.env.EMAIL_STRUCTURE_DTM || 'dtm-tresorerie@bdl.dz',
+        description: 'Email de la structure DTM (Notification Messages SWIFT MT103)'
+      }
+    });
+
+    await SystemSetting.findOrCreate({
+      where: { key: 'email_structure_dmb' },
+      defaults: {
+        value: process.env.EMAIL_STRUCTURE_DMB || 'dmb-monetique@bdl.dz',
+        description: 'Email de la structure DMB (Notification Fichiers SI Retour Rejet/Comptabilisation)'
+      }
+    });
+
+    console.log('[Seed] Paramètres planificateur OD et emails structures BDL (DCC, DTM, DMB) initialisés.');
     console.log('[Seed] Initialisation complète terminée avec succès !');
   } catch (err) {
     console.error('[Seed] Erreur lors de l initialisation :', err);

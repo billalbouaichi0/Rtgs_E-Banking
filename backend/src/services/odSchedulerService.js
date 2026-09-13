@@ -6,6 +6,7 @@ const OdBatchGenerator = require('../generators/odBatchGenerator');
 const Mt103Generator = require('../generators/mt103Generator');
 const SiRetourGenerator = require('../generators/siRetourGenerator');
 const SiCptGenerator = require('../generators/siCptGenerator');
+const emailService = require('./emailService');
 
 class OdSchedulerService {
   constructor() {
@@ -283,6 +284,19 @@ class OdSchedulerService {
             details: { motifRejet, soldeDinar, montant: virement.montant, siRetFileName }
           });
 
+          // Notification Email Structure DMB pour SI Retour de rejet
+          try {
+            await emailService.sendSiRetourNotification({
+              type: 'REJET',
+              virement,
+              siFileName: siRetFileName,
+              siContent: siRetContent,
+              motif: motifRejet
+            });
+          } catch (mailErr) {
+            console.error(`[OdScheduler] Erreur notification email DMB pour rejet virement #${virement.id}:`, mailErr.message);
+          }
+
           virementsRejetes.push(virement);
         }
       }
@@ -298,6 +312,8 @@ class OdSchedulerService {
         await folderStorageService.writeOutputFile('generated_od', odBatchFileName, odBatchContent);
 
         const now = new Date();
+        const totalMontantValide = virementsValides.reduce((sum, v) => sum + Number(v.montant || 0), 0);
+
         for (const v of virementsValides) {
           await v.update({
             statut: 'OD_GEN',
@@ -316,6 +332,20 @@ class OdSchedulerService {
             virementId: v.id,
             details: { odBatchFileName, cleUnicite: v.cleUniciteSab, montant: v.montant }
           });
+        }
+
+        // Notification Email Structure DCC pour Fichier OD
+        try {
+          await emailService.sendOdNotification({
+            odFileName: odBatchFileName,
+            odContent: odBatchContent,
+            virements: virementsValides,
+            totalMontant: totalMontantValide,
+            nombreVirements: virementsValides.length,
+            dateGeneration: now
+          });
+        } catch (mailErr) {
+          console.error(`[OdScheduler] Erreur notification email DCC pour lot OD ${odBatchFileName}:`, mailErr.message);
         }
       }
 
@@ -423,6 +453,32 @@ class OdSchedulerService {
               details: { cptoddco: checkRes.cptoddco, mt103FileName, siCptFileName }
             });
 
+            // 1. Notification Email Structure DTM pour MT103
+            try {
+              await emailService.sendMt103Notification({
+                virement,
+                banqueBenif,
+                mt103FileName,
+                mt103Content,
+                cptoddco: checkRes.cptoddco
+              });
+            } catch (mailErr) {
+              console.error(`[OdScheduler] Erreur notification email DTM pour MT103 virement #${virement.id}:`, mailErr.message);
+            }
+
+            // 2. Notification Email Structure DMB pour SI Retour Comptabilisé
+            try {
+              await emailService.sendSiRetourNotification({
+                type: 'COMPTABILISATION',
+                virement,
+                siFileName: siCptFileName,
+                siContent: siCptContent,
+                cptoddco: checkRes.cptoddco
+              });
+            } catch (mailErr) {
+              console.error(`[OdScheduler] Erreur notification email DMB pour SI_VIR_CPT virement #${virement.id}:`, mailErr.message);
+            }
+
             countComptabilises++;
           } else if (checkRes.status === 'INTEGRE') {
             // 2. Opération intégrée dans SAB mais pas encore comptabilisée
@@ -467,6 +523,19 @@ class OdSchedulerService {
               nomFichier: virement.remise?.nomFichier || 'N/A',
               virementId: virement.id
             });
+
+            // Notification Email Structure DMB pour SI Retour Rejet SAB
+            try {
+              await emailService.sendSiRetourNotification({
+                type: 'REJET',
+                virement,
+                siFileName: siRetFileName,
+                siContent: siRetContent,
+                motif: 'Rejet lors du traitement comptable SAB (CPTODETA 002)'
+              });
+            } catch (mailErr) {
+              console.error(`[OdScheduler] Erreur notification email DMB pour rejet SAB virement #${virement.id}:`, mailErr.message);
+            }
 
             countRejetes++;
           }

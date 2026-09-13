@@ -8,6 +8,7 @@ const OdGenerator = require('../generators/odGenerator');
 const OdBatchGenerator = require('../generators/odBatchGenerator');
 const SiRetourGenerator = require('../generators/siRetourGenerator');
 const folderStorageService = require('./folderStorageService');
+const emailService = require('./emailService');
 const { Op } = require('sequelize');
 const { Remise, Virement, BanqueRef, TraitementLog } = require('../models');
 
@@ -197,6 +198,19 @@ class ProcessingService {
             details: { motifDoublon, siRetFileName, libelle: virData.libelle, nomBeneficiaire: virData.nomBeneficiaire }
           });
 
+          // Notification Email Structure DMB pour rejet doublon
+          try {
+            await emailService.sendSiRetourNotification({
+              type: 'REJET',
+              virement: virData,
+              siFileName: siRetFileName,
+              siContent: siRetContent,
+              motif: motifDoublon
+            });
+          } catch (mailErr) {
+            console.error(`[ProcessingService] Erreur notification email DMB doublon virement #${virement.id}:`, mailErr.message);
+          }
+
           countRejetes++;
           continue;
         }
@@ -379,6 +393,19 @@ class ProcessingService {
       virementId: virement.id,
       details: { siRetFileName, motif: motifFinal, username }
     });
+
+    // Notification Email Structure DMB pour refus manuel
+    try {
+      await emailService.sendSiRetourNotification({
+        type: 'REJET',
+        virement,
+        siFileName: siRetFileName,
+        siContent: siRetContent,
+        motif: motifFinal
+      });
+    } catch (mailErr) {
+      console.error(`[ProcessingService] Erreur notification email DMB refus manuel virement #${virement.id}:`, mailErr.message);
+    }
 
     // 4. Recalculer le statut global de la remise
     if (virement.remiseId) {

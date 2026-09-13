@@ -14,7 +14,8 @@ import {
   Layers,
   ArrowRight,
   ShieldAlert,
-  Info
+  Info,
+  Mail
 } from 'lucide-react';
 import api from '../services/api';
 import StatusBadge from '../components/StatusBadge';
@@ -22,6 +23,7 @@ import StatusBadge from '../components/StatusBadge';
 export const OdScheduler = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingEmails, setSavingEmails] = useState(false);
   const [runningBatch, setRunningBatch] = useState(false);
   const [checkingSab, setCheckingSab] = useState(false);
   const [message, setMessage] = useState(null);
@@ -32,6 +34,13 @@ export const OdScheduler = () => {
   const [pollingMinutes, setPollingMinutes] = useState(5);
   const [autoBatchEnabled, setAutoBatchEnabled] = useState(true);
   const [autoSabPollEnabled, setAutoSabPollEnabled] = useState(true);
+
+  // Notifications structures state
+  const [structureEmails, setStructureEmails] = useState({
+    DCC: 'dcc-comptabilite@bdl.dz',
+    DTM: 'dtm-tresorerie@bdl.dz',
+    DMB: 'dmb-monetique@bdl.dz'
+  });
 
   // Status & SAB state
   const [statusCounts, setStatusCounts] = useState({
@@ -93,12 +102,42 @@ export const OdScheduler = () => {
       } catch (sabErr) {
         console.warn('Erreur chargement table SAB:', sabErr);
       }
+
+      // Fetch Structure Emails (DCC, DTM, DMB)
+      try {
+        const emailRes = await api.get('/system/structure-emails');
+        if (emailRes.data) {
+          setStructureEmails({
+            DCC: emailRes.data.DCC || 'dcc-comptabilite@bdl.dz',
+            DTM: emailRes.data.DTM || 'dtm-tresorerie@bdl.dz',
+            DMB: emailRes.data.DMB || 'dmb-monetique@bdl.dz'
+          });
+        }
+      } catch (emailErr) {
+        console.warn('Erreur chargement emails structures:', emailErr);
+      }
       
     } catch (err) {
       console.error('Erreur chargement planificateur OD:', err);
       setError(err.response?.data?.message || err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveEmails = async (e) => {
+    e.preventDefault();
+    try {
+      setSavingEmails(true);
+      setError(null);
+      setMessage(null);
+
+      const res = await api.put('/system/structure-emails', structureEmails);
+      setMessage(res.data.message || 'Adresses emails des structures BDL enregistrées avec succès.');
+    } catch (err) {
+      setError(err.response?.data?.message || err.message);
+    } finally {
+      setSavingEmails(false);
     }
   };
 
@@ -419,6 +458,89 @@ export const OdScheduler = () => {
                 <span><strong>Comptabilisation SAB :</strong> Dès que <code>CPTODETA = '003'</code> et <code>CPTODDCO &lt;&gt; 0</code>, émission du MT103 et de <code>SI_VIR_CPT_*.txt</code>.</span>
               </li>
             </ul>
+          </div>
+
+          {/* Email Notifications Configuration Card */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <Mail className="w-5 h-5 text-[#772281] dark:text-[#f9b307]" />
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Notifications Emails aux Structures
+                  </h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Envoi automatique des fichiers générés en pièces jointes
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveEmails} className="space-y-3.5">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                    Structure DCC (Fichiers OD)
+                  </label>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#772281]/10 text-[#772281] dark:text-[#f9b307] font-semibold">
+                    Comptabilité & Débits
+                  </span>
+                </div>
+                <input
+                  type="email"
+                  value={structureEmails.DCC}
+                  onChange={(e) => setStructureEmails(prev => ({ ...prev, DCC: e.target.value }))}
+                  placeholder="dcc-comptabilite@bdl.dz"
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#772281]"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                    Structure DTM (Messages MT103)
+                  </label>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold">
+                    Trésorerie & Marchés
+                  </span>
+                </div>
+                <input
+                  type="email"
+                  value={structureEmails.DTM}
+                  onChange={(e) => setStructureEmails(prev => ({ ...prev, DTM: e.target.value }))}
+                  placeholder="dtm-tresorerie@bdl.dz"
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                    Structure DMB (SI Retour Rejet & Cpt)
+                  </label>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold">
+                    Monétique & E-Banking
+                  </span>
+                </div>
+                <input
+                  type="email"
+                  value={structureEmails.DMB}
+                  onChange={(e) => setStructureEmails(prev => ({ ...prev, DMB: e.target.value }))}
+                  placeholder="dmb-monetique@bdl.dz"
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="pt-1">
+                <button
+                  type="submit"
+                  disabled={savingEmails}
+                  className="w-full py-2 rounded-xl text-xs font-bold text-white bg-slate-800 hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600 transition-all shadow-sm disabled:opacity-50"
+                >
+                  {savingEmails ? 'Enregistrement...' : 'Enregistrer les adresses emails'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>

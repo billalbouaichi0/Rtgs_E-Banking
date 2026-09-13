@@ -182,6 +182,62 @@ router.get('/od-schedule/sab-table', verifyToken, (req, res) => {
   });
 });
 
+// === CONFIGURATION DES EMAILS DE NOTIFICATION DES STRUCTURES BDL ===
+
+// Obtenir les emails configurés pour DCC, DTM, DMB
+router.get('/structure-emails', verifyToken, async (req, res) => {
+  try {
+    const emailService = require('../services/emailService');
+    const dcc = await emailService.getStructureEmail('DCC');
+    const dtm = await emailService.getStructureEmail('DTM');
+    const dmb = await emailService.getStructureEmail('DMB');
+    res.json({
+      DCC: dcc,
+      DTM: dtm,
+      DMB: dmb
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Mettre à jour les emails des structures BDL (Admin)
+router.put('/structure-emails', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    const { SystemSetting } = require('../models');
+    const { DCC, DTM, DMB } = req.body;
+
+    if (DCC) {
+      await SystemSetting.upsert({
+        key: 'email_structure_dcc',
+        value: DCC.trim(),
+        description: 'Email de la structure DCC (Notification Ordres de Débit OD)'
+      });
+    }
+    if (DTM) {
+      await SystemSetting.upsert({
+        key: 'email_structure_dtm',
+        value: DTM.trim(),
+        description: 'Email de la structure DTM (Notification Messages SWIFT MT103)'
+      });
+    }
+    if (DMB) {
+      await SystemSetting.upsert({
+        key: 'email_structure_dmb',
+        value: DMB.trim(),
+        description: 'Email de la structure DMB (Notification Fichiers SI Retour Rejet/Comptabilisation)'
+      });
+    }
+
+    res.json({
+      message: 'Adresses emails des structures BDL enregistrées avec succès.',
+      emails: { DCC, DTM, DMB }
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 
 
 // Liste des comptes SAB et mode de vérification actif
