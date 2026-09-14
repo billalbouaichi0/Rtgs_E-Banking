@@ -14,6 +14,9 @@ import AuditLogs from './pages/AuditLogs';
 import ResetPassword from './pages/ResetPassword';
 import FolderConfigs from './pages/FolderConfigs';
 import OdScheduler from './pages/OdScheduler';
+import UsersManagement from './pages/UsersManagement';
+import GuideFonctionnel from './pages/GuideFonctionnel';
+import GuideTechnique from './pages/GuideTechnique';
 
 const MainLayout = () => {
   const { user, loading } = useAuth();
@@ -54,6 +57,10 @@ const MainLayout = () => {
         return <AuditLogs />;
       case 'users':
         return <UsersManagement />;
+      case 'guide_fonctionnel':
+        return <GuideFonctionnel />;
+      case 'guide_technique':
+        return <GuideTechnique />;
       default:
         return <Dashboard setActiveTab={setActiveTab} />;
     }

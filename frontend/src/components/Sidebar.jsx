@@ -10,7 +10,9 @@ import {
   ShieldCheck,
   Eye,
   Users,
-  FolderTree
+  FolderTree,
+  BookOpen,
+  Code2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -32,6 +34,11 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
     navigation.push({ id: 'folders', name: 'Dossiers & Protocoles', icon: FolderTree });
     navigation.push({ id: 'users', name: 'Gestion Utilisateurs', icon: Users });
   }
+
+  const docNavigation = [
+    { id: 'guide_fonctionnel', name: 'Guide Fonctionnel', icon: BookOpen },
+    { id: 'guide_technique', name: 'Guide Technique A-Z', icon: Code2 }
+  ];
 
 
   return (
@@ -56,6 +63,31 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
                 }`}
               >
                 <Icon className={`w-4 h-4 ${isActive ? 'text-[#772281] dark:text-[#f9b307]' : 'text-slate-500 dark:text-slate-400'}`} />
+                <span className={isActive ? 'font-bold' : ''}>{item.name}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Documentation Section */}
+        <div className="space-y-1">
+          <p className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+            Documentation & Développeur
+          </p>
+          {docNavigation.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
+                  isActive
+                    ? 'bg-gradient-to-r from-[#772281]/25 to-[#f9b307]/15 text-[#772281] dark:text-white border border-[#772281]/40 shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-900/60 border border-transparent'
+                }`}
+              >
+                <Icon className={`w-4 h-4 ${isActive ? 'text-[#772281] dark:text-[#f9b307]' : 'text-purple-500 dark:text-purple-400'}`} />
                 <span className={isActive ? 'font-bold' : ''}>{item.name}</span>
               </button>
             );
