@@ -7,10 +7,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import dz.bdl.rtgs.config.AppConfig;
 import dz.bdl.rtgs.model.AccountingStatus;
 import dz.bdl.rtgs.model.TransactionRecord;
-import jakarta.annotation.PostConstruct;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,15 +14,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
- * Service de persistance et de registre des transactions traitées
+ * Service de persistance et de registre des transactions traitées (Pure Java)
  */
-@Service
 public class StorageRegistryService {
 
-    private static final Logger log = LoggerFactory.getLogger(StorageRegistryService.class);
+    private static final Logger log = Logger.getLogger(StorageRegistryService.class.getName());
 
     private final AppConfig appConfig;
     private final ObjectMapper objectMapper;
@@ -37,10 +33,6 @@ public class StorageRegistryService {
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
         this.objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-    }
-
-    @PostConstruct
-    public void init() {
         loadFromDisk();
     }
 
@@ -70,12 +62,6 @@ public class StorageRegistryService {
                 .collect(Collectors.toList());
     }
 
-    public List<TransactionRecord> getBySubstitutedFileName(String fileName) {
-        return registry.values().stream()
-                .filter(r -> fileName.equals(r.getSubstitutedFileName()))
-                .collect(Collectors.toList());
-    }
-
     public List<TransactionRecord> getPendingCompta() {
         return registry.values().stream()
                 .filter(r -> r.getStatus() == AccountingStatus.SUBSTITUE_ENVOYE_COMPTA
@@ -97,9 +83,9 @@ public class StorageRegistryService {
                 for (TransactionRecord r : list) {
                     registry.put(r.getId(), r);
                 }
-                log.info("[StorageRegistryService] Registre chargé depuis le disque : {} transactions trouvées.", registry.size());
+                log.info("[StorageRegistryService] Registre chargé : " + registry.size() + " transactions trouvées.");
             } catch (IOException e) {
-                log.error("[StorageRegistryService] Erreur lors du chargement du registre JSON : {}", e.getMessage());
+                log.warning("[StorageRegistryService] Erreur lors du chargement du registre JSON : " + e.getMessage());
             }
         }
     }
@@ -112,7 +98,7 @@ public class StorageRegistryService {
         try {
             objectMapper.writeValue(file, new ArrayList<>(registry.values()));
         } catch (IOException e) {
-            log.error("[StorageRegistryService] Erreur lors de l'écriture du registre sur disque : {}", e.getMessage());
+            log.warning("[StorageRegistryService] Erreur lors de l'écriture du registre sur disque : " + e.getMessage());
         }
     }
 }

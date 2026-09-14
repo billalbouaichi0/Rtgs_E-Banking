@@ -1,34 +1,36 @@
 package dz.bdl.rtgs.service;
 
 import dz.bdl.rtgs.config.AppConfig;
-import jakarta.annotation.PostConstruct;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 /**
- * Service de surveillance du répertoire entrant pour la détection
- * automatique des nouveaux fichiers EDI.
+ * Service de surveillance de dossier avec ScheduledExecutorService (Pure Java)
  */
-@Service
 public class FileWatcherService {
 
-    private static final Logger log = LoggerFactory.getLogger(FileWatcherService.class);
+    private static final Logger log = Logger.getLogger(FileWatcherService.class.getName());
 
     private final AppConfig appConfig;
     private final EdiRoutingService routingService;
+    private final AccountingCheckService accountingCheckService;
+    private ScheduledExecutorService scheduler;
 
-    public FileWatcherService(AppConfig appConfig, EdiRoutingService routingService) {
+    public FileWatcherService(AppConfig appConfig,
+                              EdiRoutingService routingService,
+                              AccountingCheckService accountingCheckService) {
         this.appConfig = appConfig;
         this.routingService = routingService;
+        this.accountingCheckService = accountingCheckService;
+        initFolders();
     }
 
-    @PostConstruct
     public void initFolders() {
         createDirIfNotExist(appConfig.getInboxFolder(), "INBOX EDI");
         createDirIfNotExist(appConfig.getOutCoreBankingFolder(), "OUT CORE BANKING");
@@ -37,10 +39,10 @@ public class FileWatcherService {
         createDirIfNotExist(appConfig.getArchiveFolder(), "ARCHIVE EDI");
         createDirIfNotExist(appConfig.getRejectedFolder(), "REJECTED EDI");
 
-        log.info("[FileWatcherService] Répertoires BDL RTGS initialisés avec succès.");
-        log.info("  -> Inbox Surveillance : {}", new File(appConfig.getInboxFolder()).getAbsolutePath());
-        log.info("  -> Sortie Core Banking: {}", new File(appConfig.getOutCoreBankingFolder()).getAbsolutePath());
-        log.info("  -> Sortie Reconstitué : {}", new File(appConfig.getOutReconstitutedFolder()).getAbsolutePath());
+        log.info("[FileWatcherService] Répertoires BDL RTGS initialisés :");
+        log.info("  -> Inbox Surveillance : " + new File(appConfig.getInboxFolder()).getAbsolutePath());
+        log.info("  -> Sortie Core Banking: " + new File(appConfig.getOutCoreBankingFolder()).getAbsolutePath());
+        log.info("  -> Sortie Reconstitué : " + new File(appConfig.getOutReconstitutedFolder()).getAbsolutePath());
     }
 
     private void createDirIfNotExist(String path, String label) {
@@ -48,15 +50,48 @@ public class FileWatcherService {
         if (!dir.exists()) {
             boolean created = dir.mkdirs();
             if (created) {
-                log.info("[FileWatcherService] Création du dossier {} : {}", label, dir.getAbsolutePath());
+                log.info("[FileWatcherService] Création du dossier " + label + " : " + dir.getAbsolutePath());
             }
         }
     }
 
-    /**
-     * Tâche de scrutation périodique du dossier entrant
-     */
-    @Scheduled(fixedDelayString = "${rtgs.polling.inbox-interval-ms:5000}")
+    public synchronized void start() {
+        if (scheduler != null && !scheduler.isShutdown()) {
+            return;
+        }
+
+        scheduler = Executors.newScheduledThreadPool(2);
+
+        // 1. Tâche de scrutation de l'inbox EDI
+        scheduler.scheduleWithFixedDelay(this::scanInbox, 1, appConfig.getInboxIntervalSeconds(), TimeUnit.SECONDS);
+
+        // 2. Tâche de vérification de la comptabilité
+        scheduler.scheduleWithFixedDelay(() -> {
+            try {
+                accountingCheckService.checkAccountingStatus();
+            } catch (Exception e) {
+                log.severe("[FileWatcherService] Erreur tâche comptabilité : " + e.getMessage());
+            }
+        }, 2, appConfig.getComptaIntervalSeconds(), TimeUnit.SECONDS);
+
+        log.info("[FileWatcherService] Ordonnanceur de surveillance démarré (Inbox: "
+                + appConfig.getInboxIntervalSeconds() + "s, Compta: " + appConfig.getComptaIntervalSeconds() + "s)");
+    }
+
+    public synchronized void stop() {
+        if (scheduler != null) {
+            scheduler.shutdown();
+            try {
+                if (!scheduler.awaitTermination(3, TimeUnit.SECONDS)) {
+                    scheduler.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                scheduler.shutdownNow();
+            }
+            log.info("[FileWatcherService] Ordonnanceur de surveillance arrêté.");
+        }
+    }
+
     public void scanInbox() {
         File inbox = new File(appConfig.getInboxFolder());
         if (!inbox.exists() || !inbox.isDirectory()) {
@@ -72,18 +107,16 @@ public class FileWatcherService {
             return;
         }
 
-        // Tri par date de modification (FIFO)
         Arrays.sort(files, Comparator.comparingLong(File::lastModified));
 
         for (File file : files) {
-            // Ignorer les fichiers en cours d'écriture temporaire
             if (file.getName().startsWith(".") || file.getName().endsWith(".tmp")) {
                 continue;
             }
             try {
                 routingService.processIncomingEdi(file);
             } catch (Exception e) {
-                log.error("[FileWatcherService] Exception non gérée lors du traitement de {} : {}", file.getName(), e.getMessage(), e);
+                log.severe("[FileWatcherService] Exception non gérée lors du traitement de " + file.getName() + " : " + e.getMessage());
             }
         }
     }

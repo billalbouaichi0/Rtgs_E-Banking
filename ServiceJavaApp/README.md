@@ -1,14 +1,14 @@
 # BDL-RTGS-ServiceJavaApp 🏦☕
 
-Application autonome en **Java 17 / Spring Boot** pour la Banque de Développement Local (BDL), dédiée à :
-1. **La surveillance automatique de répertoires entrants EDI** (`inbox_edi`).
+Application autonome en **Java Standard (Pure Java 17 SE)** sans Spring Boot, dédiée à :
+1. **La surveillance automatique de répertoires entrants EDI** (`data/inbox_edi`).
 2. **Le filtrage et la détection des virements éligibles RTGS** :
    - `Code Banque Donneur != Code Banque Bénéficiaire` (Interbancaire)
    - `Montant >= 1 000 000 DZD` (Seuil RTGS BDL)
 3. **La substitution du RIB Donneur d'Ordre** par le **RIB d'un Compte Interne BDL** (`rtgs.compte.interne.rib`) pour l'étape de comptabilisation intermédiaire Core Banking (SAB).
-4. **La traçabilité et persistance** des correspondances dans un registre JSON (`registry_transactions.json`).
-5. **La vérification de la comptabilisation** (scrutation des acquittements `inbox_compta` ou simulateur SAB).
-6. **La reconstitution automatique du fichier initial** avec le RIB Donneur d'ordre et le RIB Bénéficiaire de départ dans `out_reconstituted`, prêt pour l'émission RTGS / SWIFT MT103.
+4. **La traçabilité et persistance** des correspondances dans un registre JSON (`data/registry_transactions.json`).
+5. **La vérification de la comptabilisation** (scrutation des acquittements `data/inbox_compta` ou simulateur SAB).
+6. **La reconstitution automatique du fichier initial** avec le RIB Donneur d'ordre et le RIB Bénéficiaire de départ dans `data/out_reconstituted`, prêt pour l'émission RTGS / SWIFT MT103.
 
 ---
 
@@ -20,7 +20,7 @@ Application autonome en **Java 17 / Spring Boot** pour la Banque de Développeme
              ▼
      [ 📂 data/inbox_edi ]
              │
-             ▼ ─── (FileWatcherService)
+             ▼ ─── (FileWatcherService / ScheduledExecutorService)
    [ 🔍 EdiFixedLengthParser ]
              │
              ├── Éligible RTGS ? (Interbancaire + >= 1M DZD)
@@ -53,11 +53,11 @@ Application autonome en **Java 17 / Spring Boot** pour la Banque de Développeme
 
 ---
 
-## ⚙️ Configuration (`application.properties`)
+## ⚙️ Configuration (`config.properties`)
 
 | Propriété | Description | Valeur par défaut |
 | :--- | :--- | :--- |
-| `server.port` | Port HTTP de supervision REST | `8085` |
+| `rtgs.http.server.port` | Port HTTP léger intégré au JDK | `8085` |
 | `rtgs.folder.inbox` | Dossier surveillé pour les fichiers EDI entrants | `./data/inbox_edi` |
 | `rtgs.folder.out-core-banking` | Dossier des fichiers modifiés avec RIB compte interne | `./data/out_core_banking` |
 | `rtgs.folder.inbox-compta` | Dossier de réception des retours comptables SAB | `./data/inbox_compta` |
@@ -70,28 +70,31 @@ Application autonome en **Java 17 / Spring Boot** pour la Banque de Développeme
 
 ## 🚀 Démarrage & Compilation
 
-### 1. Prérequis
-* Java JDK 17+
-* Apache Maven 3.8+
-
-### 2. Compilation et Tests
+### 1. Compilation et Tests Unitaires
 ```bash
 cd ServiceJavaApp
 mvn clean test
 ```
 
+### 2. Création du JAR Exécutable
+```bash
+mvn clean package
+```
+
 ### 3. Lancement de l'Application
 ```bash
-mvn spring-boot:run
+java -jar target/ServiceJavaApp-1.0.0.jar
+```
+ou directement :
+```bash
+mvn exec:java -Dexec.mainClass="dz.bdl.rtgs.Main"
 ```
 
 ---
 
-## 🌐 Endpoints REST de Supervision (`http://localhost:8085`)
+## 🌐 Endpoints HTTP Légers Embarqués (`http://localhost:8085`)
 
-* `GET /api/health` : État de santé, seuil et configuration active.
+* `GET /api/health` : Statut du service et configuration active.
 * `GET /api/transactions` : Liste complète des transactions tracées dans le registre.
-* `GET /api/transactions/pending-compta` : Liste des transactions en attente de comptabilisation.
 * `POST /api/scan-now` : Déclenche manuellement la scrutation du dossier `inbox_edi`.
 * `POST /api/check-compta-now` : Déclenche manuellement la vérification de comptabilité et la reconstitution.
-* `POST /api/force-reconstitution` : Force la reconstitution des transactions comptabilisées.

@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Path;
@@ -40,7 +39,6 @@ public class ServiceJavaAppTests {
     @BeforeEach
     public void setup() {
         appConfig = new AppConfig();
-        // Configuration des répertoires temporaires pour le test
         File inbox = tempDir.resolve("inbox").toFile();
         File outCore = tempDir.resolve("out_core").toFile();
         File compta = tempDir.resolve("compta").toFile();
@@ -56,38 +54,26 @@ public class ServiceJavaAppTests {
         archive.mkdirs();
         rejected.mkdirs();
 
-        // Réflexion ou getters sur AppConfig
-        setField(appConfig, "inboxFolder", inbox.getAbsolutePath());
-        setField(appConfig, "outCoreBankingFolder", outCore.getAbsolutePath());
-        setField(appConfig, "inboxComptaFolder", compta.getAbsolutePath());
-        setField(appConfig, "outReconstitutedFolder", outRecon.getAbsolutePath());
-        setField(appConfig, "archiveFolder", archive.getAbsolutePath());
-        setField(appConfig, "rejectedFolder", rejected.getAbsolutePath());
-        setField(appConfig, "registryFilePath", registry.getAbsolutePath());
-        setField(appConfig, "minAmount", new BigDecimal("1000000.00"));
-        setField(appConfig, "codeBanqueBdl", "005");
-        setField(appConfig, "compteInterneRib", "00500133400218153023");
-        setField(appConfig, "compteInterneNom", "BDL COMPTE TRANSIT REGLEMENT RTGS");
-        setField(appConfig, "compteInterneAdresse", "DIRECTION GENERALE BDL ALGER");
-        setField(appConfig, "simulationAutoCompta", false);
+        appConfig.setInboxFolder(inbox.getAbsolutePath());
+        appConfig.setOutCoreBankingFolder(outCore.getAbsolutePath());
+        appConfig.setInboxComptaFolder(compta.getAbsolutePath());
+        appConfig.setOutReconstitutedFolder(outRecon.getAbsolutePath());
+        appConfig.setArchiveFolder(archive.getAbsolutePath());
+        appConfig.setRejectedFolder(rejected.getAbsolutePath());
+        appConfig.setRegistryFilePath(registry.getAbsolutePath());
+        appConfig.setMinAmount(new BigDecimal("1000000.00"));
+        appConfig.setCodeBanqueBdl("005");
+        appConfig.setCompteInterneRib("00500133400218153023");
+        appConfig.setCompteInterneNom("BDL COMPTE TRANSIT REGLEMENT RTGS");
+        appConfig.setCompteInterneAdresse("DIRECTION GENERALE BDL ALGER");
+        appConfig.setSimulationAutoCompta(false);
 
         parser = new EdiFixedLengthParser();
         writer = new EdiWriter();
         registryService = new StorageRegistryService(appConfig);
-        registryService.init();
 
         reconstitutionService = new FileReconstitutionService(appConfig, writer, registryService);
         routingService = new EdiRoutingService(appConfig, parser, writer, registryService);
-    }
-
-    private void setField(Object obj, String fieldName, Object val) {
-        try {
-            java.lang.reflect.Field field = obj.getClass().getDeclaredField(fieldName);
-            field.setAccessible(true);
-            field.set(obj, val);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Test
@@ -163,7 +149,7 @@ public class ServiceJavaAppTests {
         assertEquals("00806001906006101410", rtgsTx.getOriginalRibBeneficiaire());
         assertEquals(AccountingStatus.SUBSTITUE_ENVOYE_COMPTA, rtgsTx.getStatus());
 
-        // 3. Simulation de la confirmation de comptabilisation
+        // 3. Confirmation de comptabilisation
         rtgsTx.setStatus(AccountingStatus.COMPTABILISE);
         rtgsTx.setAccountedAt(LocalDateTime.now());
         registryService.saveRecord(rtgsTx);
@@ -176,7 +162,6 @@ public class ServiceJavaAppTests {
         assertTrue(outRecon.exists(), "Le fichier reconstitué doit être créé");
 
         EdiFile parsedRecon = parser.parse(outRecon);
-        // Le RIB donneur d'origine et le RIB bénéficiaire d'origine doivent être présents
         assertEquals("00500133400218153023", parsedRecon.getHeader().getRibDonneurOrdre(), "Le RIB donneur d'ordre d'origine est restitué");
         assertEquals(1, parsedRecon.getTransactions().size());
         EdiTransaction reconTx = parsedRecon.getTransactions().get(0);

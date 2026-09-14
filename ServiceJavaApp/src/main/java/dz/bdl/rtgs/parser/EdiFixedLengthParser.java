@@ -3,9 +3,6 @@ package dz.bdl.rtgs.parser;
 import dz.bdl.rtgs.model.EdiFile;
 import dz.bdl.rtgs.model.EdiHeader;
 import dz.bdl.rtgs.model.EdiTransaction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -16,14 +13,14 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
- * Parseur EDI conforme aux spécifications exactes de positionnement fixe BDL / Algérie
+ * Parseur EDI conforme aux spécifications exactes de positionnement fixe BDL (Pure Java)
  */
-@Component
 public class EdiFixedLengthParser {
 
-    private static final Logger log = LoggerFactory.getLogger(EdiFixedLengthParser.class);
+    private static final Logger log = Logger.getLogger(EdiFixedLengthParser.class.getName());
 
     /**
      * Extrait une sous-chaîne selon des positions 1-indexées inclusives
@@ -48,10 +45,9 @@ public class EdiFixedLengthParser {
         try {
             String cleaned = rawStr.trim();
             BigDecimal raw = new BigDecimal(cleaned);
-            // Conversion des centimes (standard BDL : 2 décimales implicites)
             return raw.divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
         } catch (Exception e) {
-            log.warn("Impossible de parser le montant brut '{}' : {}", rawStr, e.getMessage());
+            log.warning("Impossible de parser le montant brut '" + rawStr + "' : " + e.getMessage());
             return BigDecimal.ZERO;
         }
     }

@@ -3,7 +3,6 @@ package dz.bdl.rtgs.generator;
 import dz.bdl.rtgs.model.EdiFile;
 import dz.bdl.rtgs.model.EdiHeader;
 import dz.bdl.rtgs.model.EdiTransaction;
-import org.springframework.stereotype.Component;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -13,9 +12,8 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Générateur de fichiers EDI au format positionnel fixe strict BDL
+ * Générateur de fichiers EDI au format positionnel fixe strict BDL (Pure Java)
  */
-@Component
 public class EdiWriter {
 
     public static String rpad(String value, int length) {
@@ -45,9 +43,6 @@ public class EdiWriter {
         return lpad(String.valueOf(centimes), length, '0');
     }
 
-    /**
-     * Génère la ligne d'entête VIRM...
-     */
     public String buildHeaderLine(EdiHeader header) {
         StringBuilder sb = new StringBuilder();
         sb.append(rpad(header.getTag() != null ? header.getTag() : "VIRM", 4)); // 1-4
@@ -66,9 +61,6 @@ public class EdiWriter {
         return sb.toString();
     }
 
-    /**
-     * Génère une ligne de transaction corps
-     */
     public String buildTransactionLine(EdiTransaction tx) {
         StringBuilder sb = new StringBuilder();
         sb.append(lpad(tx.getNumeroOrdre(), 10, '0'));                          // 1-10
@@ -82,26 +74,20 @@ public class EdiWriter {
         return sb.toString();
     }
 
-    /**
-     * Écrit un objet EdiFile complet vers un fichier sur le disque
-     */
     public void writeToFile(EdiFile ediFile, File targetFile) throws IOException {
         if (targetFile.getParentFile() != null && !targetFile.getParentFile().exists()) {
             targetFile.getParentFile().mkdirs();
         }
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(targetFile, StandardCharsets.UTF_8))) {
-            // 1. Entête
             writer.write(buildHeaderLine(ediFile.getHeader()));
             writer.newLine();
 
-            // 2. Corps
             for (EdiTransaction tx : ediFile.getTransactions()) {
                 writer.write(buildTransactionLine(tx));
                 writer.newLine();
             }
 
-            // 3. Fin Remise FVIR
             String trailer = ediFile.getTrailerLine();
             if (trailer == null || trailer.trim().isEmpty()) {
                 trailer = rpad("FVIR", 100);
